@@ -126,7 +126,7 @@ service cloud.firestore {
       // Authenticated users can create messages with valid content
       allow create: if request.auth != null && 
         request.resource.data.userId == request.auth.uid &&
-        isValidString(request.resource.data.message, 1, 1000);
+        isValidString(request.resource.data.content, 1, 1000);
       
       // Users can delete their own messages
       allow delete: if request.auth != null && 
@@ -219,6 +219,16 @@ service cloud.firestore {
       allow read: if true;
       
       // Only admins can update version info
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Release notes
+    match /release_notes/{buildNumber} {
+      // Anyone can read release notes
+      allow read: if true;
+      
+      // Only admins can create/update release notes
       allow write: if request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }

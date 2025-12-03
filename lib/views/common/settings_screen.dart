@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/sound_service.dart';
+import '../../services/update_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/layout/app_layout.dart';
 import '../../utils/notification_helper.dart';
@@ -19,13 +21,12 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notificationsEnabled = true;
   bool emailNotifications = false;
-  bool darkMode = true;
-  String difficulty = 'balanced';
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final soundService = Provider.of<SoundService>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return AppLayout(
       currentRoute: '/settings',
@@ -136,38 +137,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       vertical: 4,
                     ),
                   ),
-                  if (soundService.soundEnabled) ...[
-                    Divider(height: 1, color: AppTheme.grey700),
-                    ListTile(
-                      leading: Icon(
-                        Icons.volume_down_outlined,
-                        color: AppTheme.grey200,
-                      ),
-                      title: const Text('Volume'),
-                      subtitle: Slider(
-                        value: soundService.volume,
-                        onChanged: (value) {
-                          soundService.setVolume(value);
-                        },
-                        onChangeEnd: (value) {
-                          soundService.play(SoundEffect.notification);
-                        },
-                        activeColor: AppTheme.primaryPurple,
-                        inactiveColor: AppTheme.grey700,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
             // Preferences Section
-            _SectionHeader(title: 'Preferences'),
+            _SectionHeader(title: 'Appearance'),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: SwitchListTile(
+                secondary: Icon(
+                  themeProvider.isDarkMode
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+                title: const Text('Light Theme'),
+                subtitle: Text(
+                  themeProvider.isDarkMode
+                      ? 'Switch to light mode'
+                      : 'Switch to dark mode',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                value: !themeProvider.isDarkMode,
+                onChanged: (value) {
+                  themeProvider.toggleTheme();
+                },
+                activeThumbColor: AppTheme.primaryPurple,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // App Info Section
+            _SectionHeader(title: 'App Info'),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -175,66 +187,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppTheme.grey700),
               ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.tune, color: AppTheme.grey200),
-                    title: const Text('Default Difficulty'),
-                    subtitle: Text(
-                      _getDifficultyLabel(difficulty),
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    trailing: DropdownButton<String>(
-                      value: difficulty,
-                      underline: const SizedBox(),
-                      dropdownColor: AppTheme.grey800,
-                      items: const [
-                        DropdownMenuItem(value: 'easy', child: Text('Easy')),
-                        DropdownMenuItem(
-                          value: 'balanced',
-                          child: Text('Balanced'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'challenging',
-                          child: Text('Challenging'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          difficulty = value ?? 'balanced';
-                        });
-                      },
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                  Divider(height: 1, color: AppTheme.grey700),
-                  SwitchListTile(
-                    secondary: Icon(
-                      Icons.dark_mode_outlined,
-                      color: AppTheme.grey200,
-                    ),
-                    title: const Text('Dark Mode'),
-                    subtitle: Text(
-                      'Currently enabled',
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    value: darkMode,
-                    onChanged: (value) {
-                      setState(() {
-                        darkMode = value;
-                      });
-                      context.showInfo('Theme switching coming soon!');
-                    },
-                    activeThumbColor: AppTheme.primaryPurple,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                ],
+              child: ListTile(
+                leading: Icon(
+                  Icons.system_update_outlined,
+                  color: AppTheme.grey200,
+                ),
+                title: const Text('Check for Updates'),
+                subtitle: Text(
+                  'Version 1.2.0',
+                  style: TextStyle(fontSize: 12, color: AppTheme.grey400),
+                ),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => _checkForUpdates(context, authProvider),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -387,17 +355,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _getDifficultyLabel(String difficulty) {
-    switch (difficulty) {
-      case 'easy':
-        return 'Easier missions recommended';
-      case 'challenging':
-        return 'Harder missions recommended';
-      default:
-        return 'Balanced difficulty';
-    }
-  }
-
   void _showChangePasswordDialog(
     BuildContext context,
     AuthProvider authProvider,
@@ -498,6 +455,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _checkForUpdates(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Card(
+          margin: const EdgeInsets.all(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppTheme.primaryPurple),
+                const SizedBox(height: 16),
+                Text('Checking for updates...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final updateInfo = await UpdateService.checkForUpdate();
+      
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      if (updateInfo != null) {
+        await UpdateService.showUpdateDialog(context, updateInfo);
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: AppTheme.successGreen),
+                const SizedBox(width: 8),
+                const Text('Up to Date'),
+              ],
+            ),
+            content: const Text(
+              'You\'re running the latest version of Mission Board (v1.2.0)!',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      
+      context.showError('Failed to check for updates. Please try again later.');
+    }
   }
 
   void _showDeleteAccountDialog(

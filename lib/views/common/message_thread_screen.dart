@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/conversation_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/messages/rich_message_input.dart';
@@ -51,7 +52,9 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final messagingProvider = Provider.of<MessagingProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final currentUser = authProvider.user;
+    final isDark = themeProvider.isDarkMode;
 
     if (currentUser == null) {
       return const Scaffold(
@@ -60,10 +63,18 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.darkGrey,
+      backgroundColor: isDark ? AppTheme.darkGrey : AppTheme.lightBg,
       appBar: AppBar(
-        backgroundColor: AppTheme.grey900,
-        title: Text(widget.otherUserName),
+        backgroundColor: isDark ? AppTheme.grey900 : Colors.white,
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white : AppTheme.lightText,
+        ),
+        title: Text(
+          widget.otherUserName,
+          style: TextStyle(
+            color: isDark ? Colors.white : AppTheme.lightText,
+          ),
+        ),
       ),
       body: Column(
         children: [

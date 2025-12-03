@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'release_notes_service.dart';
 
 class UpdateService {
   static const String _configCollection = 'app_config';
@@ -119,12 +120,101 @@ class UpdateService {
     }
   }
 
-  /// Check for updates on app start
-  static Future<void> checkAndPromptUpdate(BuildContext context) async {
+  /// Check for updates on app start and create notification
+  static Future<void> checkAndPromptUpdate(
+    BuildContext context, {
+    String? userId,
+  }) async {
     final updateInfo = await checkForUpdate();
     if (updateInfo != null && context.mounted) {
       await showUpdateDialog(context, updateInfo);
+
+      // Create in-app notification about update
+      if (userId != null) {
+        try {
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'userId': userId,
+            'type': 'update_available',
+            'title': '🎉 Update Available',
+            'body': 'Version ${updateInfo.latestVersion} is ready to download!',
+            'data': {
+              'version': updateInfo.latestVersion,
+              'downloadUrl': updateInfo.downloadUrl,
+            },
+            'read': false,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        } catch (e) {
+          debugPrint('Error creating update notification: $e');
+        }
+      }
     }
+  }
+
+  /// Show release notes button in dialog
+  static Future<void> showUpdateDialogWithReleaseNotes(
+    BuildContext context,
+    UpdateInfo updateInfo,
+    int buildNumber,
+  ) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: !updateInfo.forceUpdate,
+      builder: (context) => AlertDialog(
+        title: Text(
+          updateInfo.forceUpdate ? '⚠️ Update Required' : '🎉 Update Available',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Version ${updateInfo.latestVersion} is now available!',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text('Current version: ${updateInfo.currentVersion}'),
+            const SizedBox(height: 16),
+            Text(
+              'What\'s new:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(updateInfo.releaseNotes),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () async {
+                final releaseNote = await ReleaseNotesService.getReleaseNote(
+                  buildNumber,
+                );
+                if (releaseNote != null && context.mounted) {
+                  await ReleaseNotesService.showReleaseNotesDialog(
+                    context,
+                    releaseNote,
+                  );
+                }
+              },
+              icon: const Icon(Icons.article_outlined, size: 18),
+              label: const Text('View Full Release Notes'),
+            ),
+          ],
+        ),
+        actions: [
+          if (!updateInfo.forceUpdate)
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Later'),
+            ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _downloadAndInstall(updateInfo.downloadUrl);
+            },
+            child: const Text('Update Now'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

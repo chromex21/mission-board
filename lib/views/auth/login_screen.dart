@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import 'signup_screen.dart';
 import '../../utils/notification_helper.dart';
@@ -99,6 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
     final screenWidth = MediaQuery.of(context).size.width;
     double formWidth;
 
@@ -111,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.darkGrey,
+      backgroundColor: isDark ? AppTheme.darkGrey : AppTheme.lightBg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

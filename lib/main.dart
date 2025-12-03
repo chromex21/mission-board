@@ -13,6 +13,7 @@ import 'providers/lobby_provider.dart';
 import 'providers/messaging_provider.dart';
 import 'providers/friends_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/theme_provider.dart';
 import 'services/sound_service.dart';
 import 'services/update_service.dart';
 import 'routes/app_routes.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProxyProvider<ActivityProvider, MissionProvider>(
@@ -54,11 +56,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => SoundService()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
+      child: Consumer2<AuthProvider, ThemeProvider>(
+        builder: (context, auth, themeProvider, _) {
           return MaterialApp(
             title: 'Mission Board',
-            theme: AppTheme.darkTheme,
+            theme: themeProvider.isDarkMode
+                ? AppTheme.darkTheme
+                : AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
             // Use a reactive home instead of initialRoute so it updates on auth changes
             home: auth.user == null
                 ? const LoginScreen()
@@ -85,7 +93,9 @@ class _HomeScreenWithUpdateCheckState extends State<HomeScreenWithUpdateCheck> {
     super.initState();
     // Check for updates after login
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateService.checkAndPromptUpdate(context);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.uid;
+      UpdateService.checkAndPromptUpdate(context, userId: userId);
     });
   }
 

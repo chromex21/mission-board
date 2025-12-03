@@ -86,6 +86,21 @@ class Message {
   });
 
   factory Message.fromMap(Map<String, dynamic> map, String id) {
+    // Handle timestamp safely
+    DateTime timestamp;
+    try {
+      final ts = map['timestamp'];
+      if (ts == null) {
+        timestamp = DateTime.now();
+      } else if (ts is Timestamp) {
+        timestamp = ts.toDate();
+      } else {
+        timestamp = DateTime.now();
+      }
+    } catch (e) {
+      timestamp = DateTime.now();
+    }
+
     return Message(
       id: id,
       conversationId: map['conversationId'] ?? '',
@@ -96,7 +111,7 @@ class Message {
         (e) => e.name == map['type'],
         orElse: () => MessageType.text,
       ),
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
+      timestamp: timestamp,
       isRead: map['isRead'] ?? false,
       readBy: List<String>.from(map['readBy'] ?? []),
     );

@@ -33,6 +33,7 @@ class MessagingProvider with ChangeNotifier {
       }
 
       // Create new conversation
+      final now = Timestamp.fromDate(DateTime.now());
       final newConv = await _firestore.collection('conversations').add({
         'participants': [currentUserId, otherUserId],
         'participantDetails': {
@@ -43,8 +44,8 @@ class MessagingProvider with ChangeNotifier {
         'lastMessageSenderId': null,
         'lastMessageTime': null,
         'unreadCount': {currentUserId: 0, otherUserId: 0},
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': now,
+        'updatedAt': now,
       });
 
       return newConv.id;
@@ -63,9 +64,8 @@ class MessagingProvider with ChangeNotifier {
     MessageType type = MessageType.text,
   }) async {
     try {
-      final now = DateTime.now();
-
       // Add message to subcollection
+      final now = Timestamp.fromDate(DateTime.now());
       await _firestore
           .collection('conversations')
           .doc(conversationId)
@@ -76,7 +76,7 @@ class MessagingProvider with ChangeNotifier {
             'senderName': senderName,
             'content': content,
             'type': type.name,
-            'timestamp': Timestamp.fromDate(now),
+            'timestamp': now,
             'isRead': false,
             'readBy': [senderId], // Sender has "read" their own message
           });
@@ -85,9 +85,9 @@ class MessagingProvider with ChangeNotifier {
       final updateData = <String, dynamic>{
         'lastMessage': content,
         'lastMessageSenderId': senderId,
-        'lastMessageTime': Timestamp.fromDate(now),
+        'lastMessageTime': now,
         'unreadCount.$senderId': 0,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': now,
       };
 
       // Increment unread count for other participants
@@ -115,7 +115,7 @@ class MessagingProvider with ChangeNotifier {
       // Update conversation unread count
       await _firestore.collection('conversations').doc(conversationId).update({
         'unreadCount.$userId': 0,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
       });
 
       // Update messages in batch

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../widgets/layout/app_layout.dart';
 import '../../widgets/lobby/lobby_widget.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../utils/responsive_helper.dart';
 
@@ -15,34 +16,113 @@ class LobbyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = AppBreakpoints.isMobile(context);
 
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     return AppLayout(
       currentRoute: '/lobby',
       title: 'Lobby',
       onNavigate: onNavigate ?? (route) {},
       onProfileTap: () => Navigator.pushNamed(context, '/profile'),
-      child: isMobile
-          ? const LobbyWidget() // Mobile: just show chat
-          : Row(
-              children: [
-                // Chat area (takes 70% of space)
-                const Expanded(flex: 7, child: LobbyWidget()),
+      child: Stack(
+        children: [
+          // Main content
+          isMobile
+              ? const LobbyWidget()
+              : Row(
+                  children: [
+                    // Chat area (takes 70% of space)
+                    const Expanded(flex: 7, child: LobbyWidget()),
 
-                // Active users sidebar (takes 30% of space)
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(0, 20, 20, 20),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.grey900,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.grey700),
+                    // Active users sidebar (takes 30% of space)
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(0, 20, 20, 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? AppTheme.grey700 : AppTheme.lightBorder,
+                          ),
+                        ),
+                        child: const _ActiveUsersPanel(),
+                      ),
                     ),
-                    child: const _ActiveUsersPanel(),
+                  ],
+                ),
+
+          // Floating button for mobile only - positioned in bottom-left corner
+          if (isMobile)
+            Positioned(
+              bottom: 80,
+              left: 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(16),
+                color: AppTheme.primaryPurple,
+                child: InkWell(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Handle bar
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppTheme.grey600 : AppTheme.lightBorder,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: _ActiveUsersPanel(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.people, color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Active',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
+        ],
+      ),
     );
   }
 }
@@ -53,6 +133,10 @@ class _ActiveUsersPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final textColor = isDark ? Colors.white : AppTheme.lightText;
+    final subtextColor = isDark ? AppTheme.grey400 : AppTheme.lightSubtext;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,12 +145,12 @@ class _ActiveUsersPanel extends StatelessWidget {
           children: [
             Icon(Icons.people, size: 20, color: AppTheme.successGreen),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Active Users',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
           ],
@@ -121,7 +205,7 @@ class _ActiveUsersPanel extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         'Loading users...',
-                        style: TextStyle(color: AppTheme.grey400, fontSize: 12),
+                        style: TextStyle(color: subtextColor, fontSize: 12),
                       ),
                     ],
                   ),
@@ -141,7 +225,7 @@ class _ActiveUsersPanel extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         'Error loading users',
-                        style: TextStyle(color: AppTheme.grey400, fontSize: 12),
+                        style: TextStyle(color: subtextColor, fontSize: 12),
                       ),
                     ],
                   ),
@@ -161,12 +245,12 @@ class _ActiveUsersPanel extends StatelessWidget {
                       Icon(
                         Icons.people_outline,
                         size: 48,
-                        color: AppTheme.grey600,
+                        color: isDark ? AppTheme.grey600 : AppTheme.lightBorder,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'No one else online',
-                        style: TextStyle(color: AppTheme.grey400, fontSize: 14),
+                        style: TextStyle(color: subtextColor, fontSize: 14),
                       ),
                     ],
                   ),
@@ -187,6 +271,14 @@ class _ActiveUsersPanel extends StatelessWidget {
                       horizontal: 8,
                       vertical: 4,
                     ),
+                    onTap: () {
+                      // Navigate to user profile when clicked
+                      Navigator.pushNamed(
+                        context,
+                        '/user-profile',
+                        arguments: user['uid'],
+                      );
+                    },
                     leading: Stack(
                       children: [
                         CircleAvatar(
@@ -211,7 +303,7 @@ class _ActiveUsersPanel extends StatelessWidget {
                               color: AppTheme.successGreen,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppTheme.grey900,
+                                color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
                                 width: 2,
                               ),
                             ),
@@ -221,9 +313,10 @@ class _ActiveUsersPanel extends StatelessWidget {
                     ),
                     title: Text(
                       user['displayName'] ?? 'Unknown',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
+                        color: textColor,
                       ),
                     ),
                     subtitle: Text(

@@ -18,6 +18,233 @@ class AppTheme {
   static const errorRed = Color(0xFFDA3633);
   static const infoBlue = Color(0xFF58A6FF);
 
+  // Light theme colors
+  static const lightBg = Color(0xFFFAFBFC); // Light background
+  static const lightCard = Color(0xFFFFFFFF); // White cards
+  static const lightBorder = Color(0xFFD0D7DE); // Light border
+  static const lightText = Color(0xFF24292F); // Dark text for light theme
+  static const lightSubtext = Color(0xFF57606A); // Muted text for light theme
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBg,
+      primaryColor: primaryPurple,
+      colorScheme: ColorScheme.light(
+        primary: primaryPurple,
+        secondary: primaryPurple,
+        surface: lightCard,
+        error: errorRed,
+        onPrimary: white,
+        onSecondary: white,
+        onSurface: lightText,
+        onError: white,
+      ),
+
+      // AppBar theme
+      appBarTheme: AppBarTheme(
+        backgroundColor: lightCard,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: lightText,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: lightText),
+        toolbarHeight: 56,
+      ),
+
+      // Card theme
+      cardTheme: CardThemeData(
+        color: lightCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: lightBorder, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+
+      // Input decoration theme
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: lightCard,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: lightBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: lightBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: primaryPurple, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(color: errorRed),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        labelStyle: TextStyle(color: lightSubtext),
+        hintStyle: TextStyle(color: lightSubtext),
+      ),
+
+      // Button themes
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryPurple,
+          foregroundColor: white,
+          elevation: 0,
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryPurple,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: lightText,
+          side: BorderSide(color: lightBorder),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+      ),
+
+      // Text theme
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          color: lightText,
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+        ),
+        displayMedium: TextStyle(
+          color: lightText,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+        ),
+        displaySmall: TextStyle(
+          color: lightText,
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineLarge: TextStyle(
+          color: lightText,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineMedium: TextStyle(
+          color: lightText,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineSmall: TextStyle(
+          color: lightText,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: TextStyle(
+          color: lightText,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: TextStyle(
+          color: lightText,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        titleSmall: TextStyle(
+          color: lightText,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        bodyLarge: TextStyle(
+          color: lightText,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+        bodyMedium: TextStyle(
+          color: lightText,
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+        ),
+        bodySmall: TextStyle(
+          color: lightSubtext,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
+        labelLarge: TextStyle(
+          color: lightText,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        labelMedium: TextStyle(
+          color: lightSubtext,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        labelSmall: TextStyle(
+          color: lightSubtext,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+
+      // Divider theme
+      dividerTheme: DividerThemeData(
+        color: lightBorder,
+        thickness: 1,
+        space: 1,
+      ),
+
+      // Bottom navigation bar theme
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: lightCard,
+        selectedItemColor: primaryPurple,
+        unselectedItemColor: lightSubtext,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+      ),
+
+      // Tab bar theme
+      tabBarTheme: TabBarThemeData(
+        labelColor: primaryPurple,
+        unselectedLabelColor: lightSubtext,
+        indicatorColor: primaryPurple,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 14),
+      ),
+
+      // Icon theme
+      iconTheme: IconThemeData(color: lightText, size: 20),
+
+      // Chip theme
+      chipTheme: ChipThemeData(
+        backgroundColor: lightBg,
+        labelStyle: TextStyle(color: lightText, fontSize: 12),
+        side: BorderSide(color: lightBorder),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,

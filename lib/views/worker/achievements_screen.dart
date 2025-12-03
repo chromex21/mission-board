@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../models/achievement_model.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -10,13 +11,24 @@ class AchievementsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final appUser = authProvider.appUser;
     final unlockedIds = appUser?.achievements ?? [];
+    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: AppTheme.darkGrey,
+      backgroundColor: isDark ? AppTheme.darkGrey : AppTheme.lightBg,
       appBar: AppBar(
-        title: const Text('Achievements'),
+        backgroundColor: isDark ? AppTheme.grey900 : Colors.white,
+        title: Text(
+          'Achievements',
+          style: TextStyle(
+            color: isDark ? Colors.white : AppTheme.lightText,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white : AppTheme.lightText,
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -30,9 +42,11 @@ class AchievementsScreen extends StatelessWidget {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.grey900,
+              color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.grey700),
+              border: Border.all(
+                color: isDark ? AppTheme.grey700 : AppTheme.lightBorder,
+              ),
             ),
             child: Row(
               children: [
@@ -65,10 +79,10 @@ class AchievementsScreen extends StatelessWidget {
                     children: [
                       Text(
                         '${unlockedIds.length} / ${Achievements.all.length} Unlocked',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.white,
+                          color: isDark ? AppTheme.white : AppTheme.lightText,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -76,7 +90,7 @@ class AchievementsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: unlockedIds.length / Achievements.all.length,
-                          backgroundColor: AppTheme.grey700,
+                          backgroundColor: isDark ? AppTheme.grey700 : AppTheme.lightBorder,
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             AppTheme.primaryPurple,
                           ),
@@ -86,7 +100,10 @@ class AchievementsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${((unlockedIds.length / Achievements.all.length) * 100).toStringAsFixed(0)}% Complete',
-                        style: TextStyle(fontSize: 12, color: AppTheme.grey400),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppTheme.grey400 : AppTheme.lightSubtext,
+                        ),
                       ),
                     ],
                   ),
@@ -110,6 +127,7 @@ class AchievementsScreen extends StatelessWidget {
                   type: type,
                   achievements: categoryAchievements,
                   unlockedIds: unlockedIds,
+                  isDark: isDark,
                 );
               },
             ),
@@ -124,11 +142,13 @@ class _CategorySection extends StatelessWidget {
   final AchievementType type;
   final List<Achievement> achievements;
   final List<String> unlockedIds;
+  final bool isDark;
 
   const _CategorySection({
     required this.type,
     required this.achievements,
     required this.unlockedIds,
+    required this.isDark,
   });
 
   String _getTypeName() {
@@ -176,10 +196,10 @@ class _CategorySection extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 _getTypeName(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.white,
+                  color: isDark ? AppTheme.white : AppTheme.lightText,
                 ),
               ),
             ],
@@ -190,6 +210,7 @@ class _CategorySection extends StatelessWidget {
           return _AchievementCard(
             achievement: achievement,
             isUnlocked: isUnlocked,
+            isDark: isDark,
           );
         }),
       ],
@@ -200,23 +221,36 @@ class _CategorySection extends StatelessWidget {
 class _AchievementCard extends StatelessWidget {
   final Achievement achievement;
   final bool isUnlocked;
+  final bool isDark;
 
-  const _AchievementCard({required this.achievement, required this.isUnlocked});
+  const _AchievementCard({
+    required this.achievement,
+    required this.isUnlocked,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = isDark ? AppTheme.grey900 : AppTheme.lightCard;
+    final lockedBgColor = isDark
+        ? AppTheme.grey900.withValues(alpha: 0.5)
+        : AppTheme.lightCard.withValues(alpha: 0.5);
+    final borderColor = isDark ? AppTheme.grey700 : AppTheme.lightBorder;
+    final iconBgColor = isDark ? AppTheme.grey800 : AppTheme.lightBg;
+    final textColor = isDark ? AppTheme.white : AppTheme.lightText;
+    final subtextColor = isDark ? AppTheme.grey400 : AppTheme.lightSubtext;
+    final lockedColor = isDark ? AppTheme.grey600 : AppTheme.lightBorder;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isUnlocked
-            ? AppTheme.grey900
-            : AppTheme.grey900.withValues(alpha: 0.5),
+        color: isUnlocked ? bgColor : lockedBgColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isUnlocked
               ? AppTheme.primaryPurple.withValues(alpha: 0.5)
-              : AppTheme.grey700,
+              : borderColor,
           width: isUnlocked ? 2 : 1,
         ),
       ),
@@ -229,12 +263,12 @@ class _AchievementCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: isUnlocked
                   ? AppTheme.primaryPurple.withValues(alpha: 0.15)
-                  : AppTheme.grey800,
+                  : iconBgColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isUnlocked
                     ? AppTheme.primaryPurple.withValues(alpha: 0.3)
-                    : AppTheme.grey700,
+                    : borderColor,
               ),
             ),
             child: Center(
@@ -259,7 +293,7 @@ class _AchievementCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isUnlocked ? AppTheme.white : AppTheme.grey600,
+                    color: isUnlocked ? textColor : lockedColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -267,7 +301,7 @@ class _AchievementCard extends StatelessWidget {
                   achievement.description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isUnlocked ? AppTheme.grey400 : AppTheme.grey600,
+                    color: isUnlocked ? subtextColor : lockedColor,
                   ),
                 ),
               ],
@@ -305,7 +339,7 @@ class _AchievementCard extends StatelessWidget {
               ),
             )
           else
-            Icon(Icons.lock, size: 20, color: AppTheme.grey600),
+            Icon(Icons.lock, size: 20, color: lockedColor),
         ],
       ),
     );

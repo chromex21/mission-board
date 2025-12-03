@@ -4,6 +4,8 @@ import '../../providers/lobby_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/lobby_message_model.dart';
+import '../messages/media_picker_bottom_sheet.dart';
+import '../messages/message_bubble.dart';
 
 class LobbyWidget extends StatefulWidget {
   const LobbyWidget({super.key});
@@ -15,6 +17,16 @@ class LobbyWidget extends StatefulWidget {
 class _LobbyWidgetState extends State<LobbyWidget> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Clean up old messages when lobby is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final lobbyProvider = Provider.of<LobbyProvider>(context, listen: false);
+      lobbyProvider.cleanupOldMessages();
+    });
+  }
 
   @override
   void dispose() {
@@ -40,7 +52,52 @@ class _LobbyWidgetState extends State<LobbyWidget> {
       content: content,
     );
 
-    _messageController.clear(); // Scroll to bottom after sending
+    _messageController.clear();
+    _scrollToBottom();
+  }
+
+  void _sendMediaMessage(String url, MediaType type) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final lobbyProvider = Provider.of<LobbyProvider>(context, listen: false);
+
+    if (authProvider.appUser == null) return;
+
+    String messageType;
+    String content;
+
+    switch (type) {
+      case MediaType.gif:
+        messageType = 'gif';
+        content = _messageController.text.trim();
+        break;
+      case MediaType.image:
+        messageType = 'image';
+        content = _messageController.text.trim();
+        break;
+      case MediaType.sticker:
+        messageType = 'sticker';
+        content = url; // Emoji is the content
+        break;
+      default:
+        messageType = 'text';
+        content = url;
+    }
+
+    lobbyProvider.sendMessage(
+      userId: authProvider.appUser!.uid,
+      userName:
+          authProvider.appUser!.displayName ?? authProvider.appUser!.email,
+      userPhotoUrl: authProvider.appUser!.photoURL,
+      content: content,
+      messageType: messageType,
+      mediaUrl: type != MediaType.sticker ? url : null,
+    );
+
+    _messageController.clear();
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -93,9 +150,32 @@ class _LobbyWidgetState extends State<LobbyWidget> {
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text(
-                      'Error loading messages',
-                      style: TextStyle(color: AppTheme.grey400),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: AppTheme.errorRed,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Error loading messages',
+                          style: TextStyle(
+                            color: AppTheme.grey400,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snapshot.error.toString(),
+                          style: TextStyle(
+                            color: AppTheme.grey600,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -133,15 +213,25 @@ class _LobbyWidgetState extends State<LobbyWidget> {
                     final isCurrentUser =
                         message.userId == authProvider.appUser?.uid;
 
-                    return _MessageBubble(
-                      message: message,
-                      isCurrentUser: isCurrentUser,
-                      onDelete: () {
-                        lobbyProvider.deleteMessage(
-                          message.id,
-                          authProvider.appUser!.uid,
+                    return InkWell(
+                      onTap: () {
+                        // Navigate to user profile when clicking on message
+                        Navigator.pushNamed(
+                          context,
+                          '/user-profile',
+                          arguments: message.userId,
                         );
                       },
+                      child: MessageBubble(
+                        message: message,
+                        isOwnMessage: isCurrentUser,
+                        onDelete: () {
+                          lobbyProvider.deleteMessage(
+                            message.id,
+                            authProvider.appUser!.uid,
+                          );
+                        },
+                      ),
                     );
                   },
                 );
@@ -158,6 +248,22 @@ class _LobbyWidgetState extends State<LobbyWidget> {
             ),
             child: Row(
               children: [
+                IconButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => MediaPickerBottomSheet(
+                        onMediaSelected: (url, type) {
+                          _sendMediaMessage(url, type);
+                        },
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.add_circle_outline, color: AppTheme.grey400),
+                  tooltip: 'Add media',
+                ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -181,173 +287,6 @@ class _LobbyWidgetState extends State<LobbyWidget> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MessageBubble extends StatelessWidget {
-  final LobbyMessage message;
-  final bool isCurrentUser;
-  final VoidCallback onDelete;
-
-  const _MessageBubble({
-    required this.message,
-    required this.isCurrentUser,
-    required this.onDelete,
-  });
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppTheme.primaryPurple,
-            backgroundImage: message.userPhotoUrl != null
-                ? NetworkImage(message.userPhotoUrl!)
-                : null,
-            child: message.userPhotoUrl == null
-                ? Text(
-                    message.userName[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      message.userName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatTime(message.createdAt),
-                      style: TextStyle(color: AppTheme.grey400, fontSize: 11),
-                    ),
-                    if (isCurrentUser) ...[
-                      const Spacer(),
-                      IconButton(
-                        onPressed: onDelete,
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: AppTheme.grey400,
-                        ),
-                        tooltip: 'Delete message',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                _buildMessageContent(),
-                if (message.missionId != null) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.grey800,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: AppTheme.primaryPurple.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.task_alt,
-                          size: 12,
-                          color: AppTheme.primaryPurple,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          message.missionTitle ?? 'Mission',
-                          style: TextStyle(
-                            color: AppTheme.primaryPurple,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageContent() {
-    final spans = <TextSpan>[];
-    final words = message.content.split(' ');
-
-    for (int i = 0; i < words.length; i++) {
-      final word = words[i];
-      if (word.startsWith('@')) {
-        spans.add(
-          TextSpan(
-            text: word,
-            style: const TextStyle(
-              color: AppTheme.primaryPurple,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
-      } else {
-        spans.add(TextSpan(text: word));
-      }
-
-      if (i < words.length - 1) {
-        spans.add(const TextSpan(text: ' '));
-      }
-    }
-
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(color: AppTheme.grey200, fontSize: 13),
-        children: spans,
       ),
     );
   }

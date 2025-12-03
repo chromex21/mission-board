@@ -123,17 +123,17 @@ service cloud.firestore {
       // Anyone authenticated can read lobby messages
       allow read: if request.auth != null;
       
-      // Authenticated users can create messages with valid content
+      // Authenticated users can create messages (content can be empty for voice/media)
       allow create: if request.auth != null && 
         request.resource.data.userId == request.auth.uid &&
-        isValidString(request.resource.data.content, 1, 1000);
+        (request.resource.data.content.size() <= 1000);
       
       // Users can delete their own messages
       allow delete: if request.auth != null && 
         resource.data.userId == request.auth.uid;
       
-      // No updates allowed (delete and recreate instead)
-      allow update: if false;
+      // Allow updates for reactions (anyone can react to messages)
+      allow update: if request.auth != null;
     }
     
     // Conversations collection (Direct Messaging)

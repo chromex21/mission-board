@@ -18,6 +18,9 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _gifSearchController = TextEditingController();
+  List<Map<String, dynamic>> _gifResults = [];
+  bool _isLoadingGifs = false;
 
   // Popular GIF categories
   final List<String> _gifCategories = [
@@ -108,7 +111,49 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   void dispose() {
     _tabController.dispose();
     _urlController.dispose();
+    _gifSearchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchGifs(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _gifResults = [];
+      });
+      return;
+    }
+
+    setState(() => _isLoadingGifs = true);
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://tenor.googleapis.com/v2/search?q=${Uri.encodeComponent(query)}&key=$_tenorApiKey&limit=20&media_filter=gif',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['results'] != null) {
+          setState(() {
+            _gifResults = List<Map<String, dynamic>>.from(data['results']);
+            _isLoadingGifs = false;
+          });
+        }
+      } else {
+        setState(() => _isLoadingGifs = false);
+      }
+    } catch (e) {
+      setState(() => _isLoadingGifs = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error searching GIFs: ${e.toString()}'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -157,64 +202,81 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   }
 
   Widget _buildGifTab() {
+    return Column(
+      children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _gifSearchController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Search GIFs...',
+              hintStyle: TextStyle(color: AppTheme.grey400),
+              prefixIcon: Icon(Icons.search, color: AppTheme.grey400),
+              suffixIcon: _gifSearchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear, color: AppTheme.grey400),
+                      onPressed: () {
+                        _gifSearchController.clear();
+                        setState(() => _gifResults = []);
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppTheme.grey800,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppTheme.grey700),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppTheme.grey700),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+              ),
+              isDense: true,
+            ),
+            onChanged: (value) {
+              if (value.length >= 2) {
+                _searchGifs(value);
+              } else if (value.isEmpty) {
+                setState(() => _gifResults = []);
+              }
+            },
+          ),
+        ),
+
+        // Results or categories
+        Expanded(
+          child: _isLoadingGifs
+              ? const Center(child: CircularProgressIndicator())
+              : _gifResults.isEmpty
+              ? _buildGifCategories()
+              : _buildGifResults(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGifCategories() {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1,
+        childAspectRatio: 1.2,
       ),
       itemCount: _gifCategories.length,
       itemBuilder: (context, index) {
         final category = _gifCategories[index];
         return InkWell(
-          onTap: () async {
-            try {
-              // Fetch GIF from Tenor API
-              final response = await http.get(
-                Uri.parse(
-                  'https://tenor.googleapis.com/v2/search?q=$category&key=$_tenorApiKey&limit=1&media_filter=gif',
-                ),
-              );
-
-              if (response.statusCode == 200) {
-                final data = json.decode(response.body);
-                if (data['results'] != null && data['results'].isNotEmpty) {
-                  final gifUrl =
-                      data['results'][0]['media_formats']['gif']['url'];
-                  widget.onMediaSelected(gifUrl, MediaType.gif);
-                  Navigator.pop(context);
-                } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('No GIFs found for "$category"'),
-                        backgroundColor: AppTheme.warningOrange,
-                      ),
-                    );
-                  }
-                }
-              } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to load GIF'),
-                      backgroundColor: AppTheme.errorRed,
-                    ),
-                  );
-                }
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error loading GIF: ${e.toString()}'),
-                    backgroundColor: AppTheme.errorRed,
-                  ),
-                );
-              }
-            }
+          onTap: () {
+            _gifSearchController.text = category;
+            _searchGifs(category);
           },
           borderRadius: BorderRadius.circular(8),
           child: Container(
@@ -234,6 +296,58 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGifResults() {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1,
+      ),
+      itemCount: _gifResults.length,
+      itemBuilder: (context, index) {
+        final gif = _gifResults[index];
+        final previewUrl = gif['media_formats']['tinygif']['url'];
+        final fullUrl = gif['media_formats']['gif']['url'];
+
+        return InkWell(
+          onTap: () {
+            widget.onMediaSelected(fullUrl, MediaType.gif);
+            Navigator.pop(context);
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              previewUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: AppTheme.grey800,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppTheme.grey800,
+                child: const Center(
+                  child: Icon(Icons.broken_image, color: Colors.white54),
+                ),
+              ),
             ),
           ),
         );

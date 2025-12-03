@@ -158,18 +158,31 @@ class _ActivityCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppTheme.primaryPurple,
-                  child: activity.userAvatar != null
-                      ? null
-                      : Text(
-                          activity.userName[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                InkWell(
+                  onTap: () {
+                    // Navigate to user profile
+                    Navigator.pushNamed(
+                      context,
+                      '/profile',
+                      arguments: activity.userId,
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppTheme.primaryPurple,
+                    backgroundImage: activity.userAvatar != null
+                        ? NetworkImage(activity.userAvatar!)
+                        : null,
+                    child: activity.userAvatar == null
+                        ? Text(
+                            activity.userName[0].toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

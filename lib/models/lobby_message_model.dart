@@ -10,8 +10,19 @@ class LobbyMessage {
   final String? missionId;
   final String? missionTitle;
   final DateTime createdAt;
-  final String messageType; // 'text', 'image', 'gif', 'sticker'
+  final String messageType; // 'text', 'image', 'gif', 'sticker', 'voice'
   final String? mediaUrl;
+
+  // Voice note fields
+  final int? voiceDuration; // in seconds
+
+  // Reactions field
+  final Map<String, List<String>>? reactions; // emoji -> [userId1, userId2...]
+
+  // Reply-to field
+  final String? replyToId; // ID of message being replied to
+  final String? replyToContent; // Preview of original message
+  final String? replyToUserName; // Name of original message author
 
   LobbyMessage({
     required this.id,
@@ -25,6 +36,11 @@ class LobbyMessage {
     required this.createdAt,
     this.messageType = 'text',
     this.mediaUrl,
+    this.voiceDuration,
+    this.reactions,
+    this.replyToId,
+    this.replyToContent,
+    this.replyToUserName,
   });
 
   factory LobbyMessage.fromFirestore(DocumentSnapshot doc) {
@@ -45,6 +61,14 @@ class LobbyMessage {
       createdAt = DateTime.now();
     }
 
+    // Parse reactions
+    Map<String, List<String>>? reactions;
+    if (data['reactions'] != null) {
+      reactions = (data['reactions'] as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+      );
+    }
+
     return LobbyMessage(
       id: doc.id,
       userId: data['userId'] ?? '',
@@ -57,6 +81,11 @@ class LobbyMessage {
       createdAt: createdAt,
       messageType: data['messageType'] ?? 'text',
       mediaUrl: data['mediaUrl'],
+      voiceDuration: data['voiceDuration'],
+      reactions: reactions,
+      replyToId: data['replyToId'],
+      replyToContent: data['replyToContent'],
+      replyToUserName: data['replyToUserName'],
     );
   }
 
@@ -71,6 +100,11 @@ class LobbyMessage {
       'missionTitle': missionTitle,
       'messageType': messageType,
       'mediaUrl': mediaUrl,
+      'voiceDuration': voiceDuration,
+      'reactions': reactions,
+      'replyToId': replyToId,
+      'replyToContent': replyToContent,
+      'replyToUserName': replyToUserName,
       'createdAt': useServerTimestamp
           ? FieldValue.serverTimestamp()
           : Timestamp.fromDate(createdAt),

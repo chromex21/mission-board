@@ -2,18 +2,89 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/lobby_message_model.dart';
 import '../../core/theme/app_theme.dart';
+import 'voice_note_player.dart';
 
 class MessageBubble extends StatelessWidget {
   final LobbyMessage message;
   final bool isOwnMessage;
   final VoidCallback? onDelete;
+  final Function(String emoji)? onReaction;
+  final VoidCallback? onReply;
 
   const MessageBubble({
     super.key,
     required this.message,
     required this.isOwnMessage,
     this.onDelete,
+    this.onReaction,
+    this.onReply,
   });
+
+  void _showMessageActions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.grey900,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Quick reactions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(
+                spacing: 12,
+                children: ['❤️', '👍', '😂', '😮', '😢', '🙏'].map((emoji) {
+                  return InkWell(
+                    onTap: () {
+                      onReaction?.call(emoji);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.grey800,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(emoji, style: TextStyle(fontSize: 24)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const Divider(height: 32),
+            if (onReply != null)
+              ListTile(
+                leading: Icon(Icons.reply, color: AppTheme.primaryPurple),
+                title: const Text(
+                  'Reply',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  onReply?.call();
+                  Navigator.pop(context);
+                },
+              ),
+            if (isOwnMessage && onDelete != null)
+              ListTile(
+                leading: Icon(Icons.delete, color: AppTheme.errorRed),
+                title: Text(
+                  'Delete',
+                  style: TextStyle(color: AppTheme.errorRed),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete?.call();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +110,7 @@ class MessageBubble extends StatelessWidget {
           ],
           Flexible(
             child: GestureDetector(
-              onLongPress: isOwnMessage ? onDelete : null,
+              onLongPress: () => _showMessageActions(context),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -61,7 +132,85 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
                     const SizedBox(height: 4),
+
+                    // Reply-to preview
+                    if (message.replyToId != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border(
+                            left: BorderSide(
+                              color: AppTheme.primaryPurple,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              message.replyToUserName ?? 'Unknown',
+                              style: TextStyle(
+                                color: AppTheme.primaryPurple,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              message.replyToContent ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     _buildMessageContent(),
+                    const SizedBox(height: 4),
+
+                    // Reactions
+                    if (message.reactions != null &&
+                        message.reactions!.isNotEmpty)
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: message.reactions!.entries.map((entry) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(entry.key, style: TextStyle(fontSize: 12)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${entry.value.length}',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
                     const SizedBox(height: 4),
                     Text(
                       DateFormat('HH:mm').format(message.createdAt),
@@ -174,6 +323,25 @@ class MessageBubble extends StatelessWidget {
         return Text(
           message.content, // Sticker emoji
           style: const TextStyle(fontSize: 48),
+        );
+
+      case 'voice':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            VoiceNotePlayer(
+              audioUrl: message.mediaUrl!,
+              duration: message.voiceDuration ?? 0,
+              isOwnMessage: isOwnMessage,
+            ),
+            if (message.content.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                message.content,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ],
         );
 
       case 'text':

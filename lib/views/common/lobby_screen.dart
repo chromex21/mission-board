@@ -49,7 +49,7 @@ class LobbyScreen extends StatelessWidget {
                                 : AppTheme.lightBorder,
                           ),
                         ),
-                        child: const _ActiveUsersPanel(),
+                        child: const ActiveUsersPanel(),
                       ),
                     ),
                   ],
@@ -60,8 +60,8 @@ class LobbyScreen extends StatelessWidget {
   }
 }
 
-class _ActiveUsersPanel extends StatelessWidget {
-  const _ActiveUsersPanel();
+class ActiveUsersPanel extends StatelessWidget {
+  const ActiveUsersPanel({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -60,6 +60,10 @@ class LobbyProvider extends ChangeNotifier {
     String? missionTitle,
     String messageType = 'text',
     String? mediaUrl,
+    int? voiceDuration,
+    String? replyToId,
+    String? replyToContent,
+    String? replyToUserName,
   }) async {
     try {
       final mentions = LobbyMessage.extractMentions(content);
@@ -76,6 +80,10 @@ class LobbyProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
         messageType: messageType,
         mediaUrl: mediaUrl,
+        voiceDuration: voiceDuration,
+        replyToId: replyToId,
+        replyToContent: replyToContent,
+        replyToUserName: replyToUserName,
       );
 
       final docRef = await _db
@@ -93,6 +101,10 @@ class LobbyProvider extends ChangeNotifier {
         createdAt: DateTime.now(), // Optimistic local time
         messageType: message.messageType,
         mediaUrl: message.mediaUrl,
+        voiceDuration: message.voiceDuration,
+        replyToId: message.replyToId,
+        replyToContent: message.replyToContent,
+        replyToUserName: message.replyToUserName,
       );
     } catch (e) {
       errorMessage = e.toString();
@@ -109,6 +121,48 @@ class LobbyProvider extends ChangeNotifier {
         await doc.reference.delete();
       }
     } catch (e) {
+      errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Add or remove reaction from a message
+  Future<void> toggleReaction(
+    String messageId,
+    String userId,
+    String emoji,
+  ) async {
+    try {
+      final docRef = _db.collection('lobby').doc(messageId);
+      final doc = await docRef.get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data();
+      Map<String, dynamic> reactions = Map<String, dynamic>.from(
+        data?['reactions'] ?? {},
+      );
+
+      if (reactions.containsKey(emoji)) {
+        List<String> users = List<String>.from(reactions[emoji] ?? []);
+        if (users.contains(userId)) {
+          users.remove(userId);
+          if (users.isEmpty) {
+            reactions.remove(emoji);
+          } else {
+            reactions[emoji] = users;
+          }
+        } else {
+          users.add(userId);
+          reactions[emoji] = users;
+        }
+      } else {
+        reactions[emoji] = [userId];
+      }
+
+      await docRef.update({'reactions': reactions});
+    } catch (e) {
+      print('❌ Error toggling reaction: $e');
       errorMessage = e.toString();
       notifyListeners();
     }

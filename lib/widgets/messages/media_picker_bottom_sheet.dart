@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../core/theme/app_theme.dart';
+
+const String _tenorApiKey = 'AIzaSyABhG8AuvmS_NnDBa9GyvsP4UGITIg7F1Y';
 
 class MediaPickerBottomSheet extends StatefulWidget {
   final Function(String url, MediaType type) onMediaSelected;
@@ -153,89 +157,87 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   }
 
   Widget _buildGifTab() {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(16),
-          margin: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.warningOrange.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppTheme.warningOrange.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.warning, color: AppTheme.warningOrange, size: 20),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'GIF integration requires Tenor API key. Please configure in settings.',
-                  style: TextStyle(color: AppTheme.warningOrange, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
-            itemCount: _gifCategories.length,
-            itemBuilder: (context, index) {
-              final category = _gifCategories[index];
-              return InkWell(
-                onTap: () {
-                  // TODO: Replace with actual Tenor API integration
-                  // For now, this is a placeholder that won't show real GIFs
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'GIF feature requires Tenor API configuration',
-                      ),
-                      backgroundColor: AppTheme.warningOrange,
-                    ),
-                  );
-                  Navigator.pop(context);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.grey800,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.grey700),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.gif_box,
-                        size: 32,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        category,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1,
+      ),
+      itemCount: _gifCategories.length,
+      itemBuilder: (context, index) {
+        final category = _gifCategories[index];
+        return InkWell(
+          onTap: () async {
+            try {
+              // Fetch GIF from Tenor API
+              final response = await http.get(
+                Uri.parse(
+                  'https://tenor.googleapis.com/v2/search?q=$category&key=$_tenorApiKey&limit=1&media_filter=gif',
                 ),
               );
-            },
+
+              if (response.statusCode == 200) {
+                final data = json.decode(response.body);
+                if (data['results'] != null && data['results'].isNotEmpty) {
+                  final gifUrl =
+                      data['results'][0]['media_formats']['gif']['url'];
+                  widget.onMediaSelected(gifUrl, MediaType.gif);
+                  Navigator.pop(context);
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('No GIFs found for "$category"'),
+                        backgroundColor: AppTheme.warningOrange,
+                      ),
+                    );
+                  }
+                }
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to load GIF'),
+                      backgroundColor: AppTheme.errorRed,
+                    ),
+                  );
+                }
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error loading GIF: ${e.toString()}'),
+                    backgroundColor: AppTheme.errorRed,
+                  ),
+                );
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.grey800,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.grey700),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.gif_box, size: 32, color: Colors.white70),
+                const SizedBox(height: 4),
+                Text(
+                  category,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

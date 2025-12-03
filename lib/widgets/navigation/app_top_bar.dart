@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../views/common/lobby_screen.dart';
 import '../../models/friend_request_model.dart';
 
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
@@ -59,6 +60,85 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+
+          // Active users button for lobby on mobile
+          if (title == 'Lobby' && MediaQuery.of(context).size.width <= 900) ...[
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.people, color: Colors.white, size: 20),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (context) => DraggableScrollableSheet(
+                      initialChildSize: 0.6,
+                      minChildSize: 0.3,
+                      maxChildSize: 0.9,
+                      builder: (context, scrollController) => Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Handle bar
+                            Container(
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: AppTheme.grey600,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // Title
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.people,
+                                    color: AppTheme.primaryPurple,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Active Users',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(),
+                            // Active users list
+                            const Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: ActiveUsersPanel(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                tooltip: 'View Active Users',
+              ),
+            ),
+          ],
 
           const SizedBox(width: 32),
 

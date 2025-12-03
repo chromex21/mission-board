@@ -91,6 +91,21 @@ class _MissionFeedViewState extends State<MissionFeedView> {
                     'Complete missions to see activity here',
                     style: TextStyle(color: AppTheme.grey600, fontSize: 14),
                   ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await feedProvider.populateDummyData();
+                    },
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Load Demo Data'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryPurple,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );

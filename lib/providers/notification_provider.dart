@@ -88,4 +88,65 @@ class NotificationProvider with ChangeNotifier {
       if (kDebugMode) print('Failed to clear notifications: $e');
     }
   }
+
+  /// Populate dummy notifications (TEMPORARY)
+  Future<void> populateDummyNotifications(String userId) async {
+    final demoNotifications = [
+      {
+        'type': NotificationType.friendRequest,
+        'title': 'New Friend Request',
+        'message': 'Sarah Chen sent you a friend request',
+        'actorName': 'Sarah Chen',
+        'actorId': 'user1',
+      },
+      {
+        'type': NotificationType.missionCompleted,
+        'title': 'Mission Completed! 🎉',
+        'message': 'You earned \$250 for completing "Customer Feedback Survey"',
+        'actorName': null,
+        'actorId': null,
+      },
+      {
+        'type': NotificationType.newMessage,
+        'title': 'New Message',
+        'message': 'Marcus Johnson: "Hey! Are you available for that mission?"',
+        'actorName': 'Marcus Johnson',
+        'actorId': 'user2',
+      },
+      {
+        'type': NotificationType.levelUp,
+        'title': 'Level Up! ⭐',
+        'message': 'Congratulations! You reached Level 5',
+        'actorName': null,
+        'actorId': null,
+      },
+    ];
+
+    try {
+      final now = DateTime.now();
+      final batch = _firestore.batch();
+
+      for (int i = 0; i < demoNotifications.length; i++) {
+        final notif = demoNotifications[i];
+        final docRef = _firestore.collection('notifications').doc();
+        
+        batch.set(docRef, {
+          'userId': userId,
+          'type': (notif['type'] as NotificationType).name,
+          'title': notif['title'],
+          'message': notif['message'],
+          'actorName': notif['actorName'],
+          'actorId': notif['actorId'],
+          'actionId': null,
+          'isRead': i >= 2, // First 2 are unread
+          'createdAt': Timestamp.fromDate(now.subtract(Duration(hours: i * 4))),
+        });
+      }
+
+      await batch.commit();
+      if (kDebugMode) print('✅ Dummy notifications populated!');
+    } catch (e) {
+      if (kDebugMode) print('❌ Error populating notifications: $e');
+    }
+  }
 }

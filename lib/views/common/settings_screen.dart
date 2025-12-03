@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../services/sound_service.dart';
 import '../../services/update_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/layout/app_layout.dart';
 import '../../utils/notification_helper.dart';
 import '../../utils/responsive_helper.dart';
+import '../../utils/demo_data_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Function(String)? onNavigate;
@@ -103,6 +105,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Theme Section
+            _SectionHeader(title: 'Theme'),
+            _ThemeSelector(),
+            const SizedBox(height: 24),
+
             // Notifications Section
             _SectionHeader(title: 'Notifications'),
             Container(
@@ -138,6 +145,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+
+            // Demo Data Section
+            _SectionHeader(title: 'Demo Data'),
+            _DemoDataSection(),
             const SizedBox(height: 24),
 
             // App Info Section
@@ -524,6 +536,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeSelector extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: themeProvider.availableThemes.map((theme) {
+          final isSelected = themeProvider.currentTheme == theme['mode'];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.grey900,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? AppTheme.primaryPurple : AppTheme.grey700,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: ListTile(
+              leading: Icon(
+                theme['icon'] as IconData,
+                color: isSelected ? AppTheme.primaryPurple : AppTheme.grey400,
+              ),
+              title: Text(
+                theme['name'] as String,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppTheme.grey200,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              subtitle: Text(
+                theme['description'] as String,
+                style: TextStyle(color: AppTheme.grey400, fontSize: 12),
+              ),
+              trailing: isSelected
+                  ? Icon(Icons.check_circle, color: AppTheme.primaryPurple)
+                  : null,
+              onTap: () => themeProvider.setThemeMode(theme['mode'] as AppThemeMode),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _DemoDataSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.grey900,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.grey700),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(Icons.group_outlined, color: AppTheme.infoBlue),
+            title: const Text('Load Demo Leaderboard'),
+            subtitle: Text(
+              '5 demo users with rankings',
+              style: TextStyle(fontSize: 12, color: AppTheme.grey400),
+            ),
+            trailing: const Icon(Icons.arrow_forward, size: 20),
+            onTap: () async {
+              try {
+                await DemoDataHelper.populateDemoLeaderboard();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('✅ Demo leaderboard loaded!'),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('❌ Error: \$e'),
+                      backgroundColor: AppTheme.errorRed,
+                    ),
+                  );
+                }
+              }
+            },
           ),
         ],
       ),

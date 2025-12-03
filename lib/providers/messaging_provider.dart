@@ -216,7 +216,10 @@ class MessagingProvider with ChangeNotifier {
   }
 
   /// Populate dummy message data (TEMPORARY)
-  Future<void> populateDummyMessages(String currentUserId, String currentUserName) async {
+  Future<void> populateDummyMessages(
+    String currentUserId,
+    String currentUserName,
+  ) async {
     final dummyUsers = [
       {'id': 'user1', 'name': 'Sarah Chen'},
       {'id': 'user2', 'name': 'Marcus Johnson'},
@@ -226,9 +229,18 @@ class MessagingProvider with ChangeNotifier {
     ];
 
     final messageTemplates = [
-      ['Hey! Are you available for that mission?', 'Yes, I can start tomorrow!'],
-      ['Great work on the last project 🎉', 'Thanks! Happy to collaborate again'],
-      ['Can we discuss the requirements?', 'Sure, let me know when you\'re free'],
+      [
+        'Hey! Are you available for that mission?',
+        'Yes, I can start tomorrow!',
+      ],
+      [
+        'Great work on the last project 🎉',
+        'Thanks! Happy to collaborate again',
+      ],
+      [
+        'Can we discuss the requirements?',
+        'Sure, let me know when you\'re free',
+      ],
       ['I saw your profile, want to team up?', 'Absolutely! Let\'s do it'],
       ['Quick question about the mission...', 'Go ahead, I\'m here to help'],
     ];
@@ -240,11 +252,11 @@ class MessagingProvider with ChangeNotifier {
       for (int i = 0; i < dummyUsers.length; i++) {
         final otherUser = dummyUsers[i];
         final messages = messageTemplates[i];
-        
+
         // Create conversation
         final convRef = _firestore.collection('conversations').doc();
         final participants = [currentUserId, otherUser['id']!];
-        
+
         batch.set(convRef, {
           'participants': participants,
           'participantDetails': {
@@ -253,7 +265,9 @@ class MessagingProvider with ChangeNotifier {
           },
           'lastMessage': messages.last,
           'lastMessageSenderId': i % 2 == 0 ? currentUserId : otherUser['id']!,
-          'lastMessageTime': Timestamp.fromDate(now.subtract(Duration(hours: i * 3))),
+          'lastMessageTime': Timestamp.fromDate(
+            now.subtract(Duration(hours: i * 3)),
+          ),
           'unreadCount': {
             currentUserId: i % 2 == 0 ? 0 : 1,
             otherUser['id']!: i % 2 == 0 ? 1 : 0,
@@ -267,8 +281,10 @@ class MessagingProvider with ChangeNotifier {
           final msgRef = convRef.collection('messages').doc();
           final isFromCurrent = j % 2 == 0;
           final senderId = isFromCurrent ? currentUserId : otherUser['id']!;
-          final senderName = isFromCurrent ? currentUserName : otherUser['name']!;
-          
+          final senderName = isFromCurrent
+              ? currentUserName
+              : otherUser['name']!;
+
           batch.set(msgRef, {
             'conversationId': convRef.id,
             'senderId': senderId,
@@ -276,10 +292,14 @@ class MessagingProvider with ChangeNotifier {
             'content': messages[j],
             'type': MessageType.text.name,
             'timestamp': Timestamp.fromDate(
-              now.subtract(Duration(hours: i * 3, minutes: (messages.length - j) * 15)),
+              now.subtract(
+                Duration(hours: i * 3, minutes: (messages.length - j) * 15),
+              ),
             ),
             'isRead': j < messages.length - 1 || isFromCurrent,
-            'readBy': j < messages.length - 1 || isFromCurrent ? participants : [senderId],
+            'readBy': j < messages.length - 1 || isFromCurrent
+                ? participants
+                : [senderId],
           });
         }
       }

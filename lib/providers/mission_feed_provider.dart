@@ -99,56 +99,16 @@ class MissionFeedProvider with ChangeNotifier {
   // Populate dummy data for testing (TEMPORARY)
   Future<void> populateDummyData() async {
     final dummyUsers = [
-      {
-        'id': 'user1',
-        'name': 'Sarah Chen',
-        'photo': 'https://i.pravatar.cc/150?img=1',
-      },
-      {
-        'id': 'user2',
-        'name': 'Marcus Johnson',
-        'photo': 'https://i.pravatar.cc/150?img=13',
-      },
-      {
-        'id': 'user3',
-        'name': 'Elena Rodriguez',
-        'photo': 'https://i.pravatar.cc/150?img=5',
-      },
-      {
-        'id': 'user4',
-        'name': 'David Kim',
-        'photo': 'https://i.pravatar.cc/150?img=14',
-      },
-      {
-        'id': 'user5',
-        'name': 'Amara Williams',
-        'photo': 'https://i.pravatar.cc/150?img=9',
-      },
-      {
-        'id': 'user6',
-        'name': 'Alex Turner',
-        'photo': 'https://i.pravatar.cc/150?img=12',
-      },
-      {
-        'id': 'user7',
-        'name': 'Priya Patel',
-        'photo': 'https://i.pravatar.cc/150?img=10',
-      },
-      {
-        'id': 'user8',
-        'name': 'James Brown',
-        'photo': 'https://i.pravatar.cc/150?img=15',
-      },
-      {
-        'id': 'user9',
-        'name': 'Lily Zhang',
-        'photo': 'https://i.pravatar.cc/150?img=20',
-      },
-      {
-        'id': 'user10',
-        'name': 'Omar Hassan',
-        'photo': 'https://i.pravatar.cc/150?img=33',
-      },
+      {'id': 'user1', 'name': 'Sarah Chen'},
+      {'id': 'user2', 'name': 'Marcus Johnson'},
+      {'id': 'user3', 'name': 'Elena Rodriguez'},
+      {'id': 'user4', 'name': 'David Kim'},
+      {'id': 'user5', 'name': 'Amara Williams'},
+      {'id': 'user6', 'name': 'Alex Turner'},
+      {'id': 'user7', 'name': 'Priya Patel'},
+      {'id': 'user8', 'name': 'James Brown'},
+      {'id': 'user9', 'name': 'Lily Zhang'},
+      {'id': 'user10', 'name': 'Omar Hassan'},
     ];
 
     final missionTitles = [
@@ -179,7 +139,7 @@ class MissionFeedProvider with ChangeNotifier {
             activity = MissionActivity.missionCompleted(
               userId: user['id']!,
               userName: user['name']!,
-              userAvatar: user['photo']!,
+              userAvatar: null,
               missionTitle: missionTitles[i % 10],
               reward: (50 + (i * 25)) % 500 + 50,
               difficulty: (i % 5) + 1,
@@ -189,7 +149,7 @@ class MissionFeedProvider with ChangeNotifier {
             activity = MissionActivity.paymentReceived(
               userId: user['id']!,
               userName: user['name']!,
-              userAvatar: user['photo']!,
+              userAvatar: null,
               amount: (100 + (i * 50)) % 1000 + 100,
               missionTitle: missionTitles[i % 10],
             );
@@ -198,7 +158,7 @@ class MissionFeedProvider with ChangeNotifier {
             activity = MissionActivity.levelUp(
               userId: user['id']!,
               userName: user['name']!,
-              userAvatar: user['photo']!,
+              userAvatar: null,
               newLevel: (i % 10) + 1,
               totalXP: (i + 1) * 500,
             );
@@ -207,7 +167,7 @@ class MissionFeedProvider with ChangeNotifier {
             activity = MissionActivity.milestoneReached(
               userId: user['id']!,
               userName: user['name']!,
-              userAvatar: user['photo']!,
+              userAvatar: null,
               milestone: '${(i + 1) * 10} Missions',
               count: (i + 1) * 10,
             );

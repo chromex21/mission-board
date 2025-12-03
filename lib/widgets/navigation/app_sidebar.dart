@@ -138,6 +138,18 @@ class _AppSidebarState extends State<AppSidebar> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 _buildNavItem(
+                  icon: Icons.feed_outlined,
+                  activeIcon: Icons.feed,
+                  label: 'Mission Feed',
+                  route: '/mission-feed',
+                ),
+                _buildNavItem(
+                  icon: Icons.store_outlined,
+                  activeIcon: Icons.store,
+                  label: 'Marketplace',
+                  route: '/mission-marketplace',
+                ),
+                _buildNavItem(
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard,
                   label: 'Missions',

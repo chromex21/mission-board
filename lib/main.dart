@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/mission_provider.dart';
+import 'providers/mission_feed_provider.dart';
 import 'providers/team_provider.dart';
 import 'providers/comment_provider.dart';
 import 'providers/attachment_provider.dart';
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
           update: (context, activityProvider, previous) =>
               previous ?? MissionProvider(activityProvider: activityProvider),
         ),
+        ChangeNotifierProvider(create: (_) => MissionFeedProvider()),
         ChangeNotifierProvider(create: (_) => TeamProvider()),
         ChangeNotifierProvider(create: (_) => CommentProvider()),
         ChangeNotifierProvider(create: (_) => AttachmentProvider()),

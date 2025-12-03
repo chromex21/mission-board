@@ -260,4 +260,24 @@ class MissionProvider extends ChangeNotifier {
       throw Exception('Mission cannot be rejected');
     }
   }
+
+  // Alias for assignMission to match marketplace UI
+  Future<void> acceptMission(
+    String missionId,
+    String userId, {
+    String? userName,
+    String? userPhotoUrl,
+  }) async {
+    return assignMission(
+      missionId,
+      userId,
+      userName: userName,
+      userPhotoUrl: userPhotoUrl,
+    );
+  }
+
+  // Fetch missions (refresh)
+  Future<void> fetchMissions() async {
+    return fetchOpenMissions();
+  }
 }

@@ -213,6 +213,24 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
     
+    // Mission Activities (Feed)
+    match /mission_activities/{activityId} {
+      // Anyone authenticated can read activities
+      allow read: if request.auth != null;
+      
+      // System/users can create activities
+      allow create: if request.auth != null;
+      
+      // Users can update activities to add likes
+      allow update: if request.auth != null;
+      
+      // Only activity owner or admin can delete
+      allow delete: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
     // App configuration (for updates)
     match /app_config/{document} {
       // Anyone can read version info

@@ -21,6 +21,7 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   final TextEditingController _gifSearchController = TextEditingController();
   List<Map<String, dynamic>> _gifResults = [];
   bool _isLoadingGifs = false;
+  bool _hasLoadedFirstGif = false;
 
   // Popular GIF categories
   final List<String> _gifCategories = [
@@ -105,6 +106,7 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadTrendingGifs();
   }
 
   @override
@@ -115,35 +117,108 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
     super.dispose();
   }
 
-  Future<void> _searchGifs(String query) async {
-    if (query.trim().isEmpty) {
-      setState(() {
-        _gifResults = [];
-      });
-      return;
-    }
-
-    setState(() => _isLoadingGifs = true);
+  Future<void> _loadTrendingGifs() async {
+    setState(() {
+      _isLoadingGifs = true;
+      _hasLoadedFirstGif = false;
+    });
 
     try {
       final response = await http.get(
         Uri.parse(
-          'https://tenor.googleapis.com/v2/search?q=${Uri.encodeComponent(query)}&key=$_tenorApiKey&limit=20&media_filter=gif',
+          'https://tenor.googleapis.com/v2/featured?key=$_tenorApiKey&limit=20&media_filter=gif,tinygif,nanogif,mediumgif',
         ),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('Trending GIFs response: ${data.keys}');
         if (data['results'] != null) {
+          final results = List<Map<String, dynamic>>.from(data['results']);
+          print('Got ${results.length} trending GIFs');
+          if (results.isNotEmpty) {
+            print('First GIF keys: ${results.first.keys}');
+            if (results.first['media_formats'] != null) {
+              final mf = results.first['media_formats'] as Map;
+              print('ALL TRENDING FORMATS AVAILABLE: ${mf.keys}');
+              mf.forEach((format, data) {
+                if (data is Map && data['url'] != null) {
+                  print('  $format: ${data['url']}');
+                }
+              });
+            }
+          }
           setState(() {
-            _gifResults = List<Map<String, dynamic>>.from(data['results']);
+            _gifResults = results;
+            _isLoadingGifs = false;
+          });
+        } else {
+          print('No results in trending response');
+          setState(() => _isLoadingGifs = false);
+        }
+      } else {
+        print('Trending API error: ${response.statusCode}');
+        setState(() => _isLoadingGifs = false);
+      }
+    } catch (e) {
+      print('Error loading trending GIFs: $e');
+      setState(() => _isLoadingGifs = false);
+    }
+  }
+
+  Future<void> _searchGifs(String query) async {
+    if (query.trim().isEmpty) {
+      _loadTrendingGifs();
+      return;
+    }
+
+    setState(() {
+      _isLoadingGifs = true;
+      _hasLoadedFirstGif = false;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://tenor.googleapis.com/v2/search?q=${Uri.encodeComponent(query)}&key=$_tenorApiKey&limit=20&media_filter=gif,tinygif,nanogif,mediumgif',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Search GIFs response for "$query": ${data.keys}');
+        if (data['results'] != null) {
+          final results = List<Map<String, dynamic>>.from(data['results']);
+          print('Got ${results.length} search results');
+          if (results.isNotEmpty) {
+            print('First result keys: ${results.first.keys}');
+            if (results.first['media_formats'] != null) {
+              final mf = results.first['media_formats'] as Map;
+              print('ALL SEARCH FORMATS AVAILABLE: ${mf.keys}');
+              mf.forEach((format, data) {
+                if (data is Map && data['url'] != null) {
+                  print('  $format: ${data['url']}');
+                }
+              });
+            }
+          }
+          setState(() {
+            _gifResults = results;
+            _isLoadingGifs = false;
+          });
+        } else {
+          print('No results for search query: $query');
+          setState(() {
+            _gifResults = [];
             _isLoadingGifs = false;
           });
         }
       } else {
+        print('Search API error: ${response.statusCode} - ${response.body}');
         setState(() => _isLoadingGifs = false);
       }
     } catch (e) {
+      print('Error searching GIFs: $e');
       setState(() => _isLoadingGifs = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,7 +318,7 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
               if (value.length >= 2) {
                 _searchGifs(value);
               } else if (value.isEmpty) {
-                setState(() => _gifResults = []);
+                _loadTrendingGifs();
               }
             },
           ),
@@ -251,11 +326,40 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
 
         // Results or categories
         Expanded(
-          child: _isLoadingGifs
-              ? const Center(child: CircularProgressIndicator())
-              : _gifResults.isEmpty
-              ? _buildGifCategories()
-              : _buildGifResults(),
+          child: Stack(
+            children: [
+              // Always build content so images can load
+              if (_gifResults.isEmpty)
+                _buildGifCategories()
+              else
+                _buildGifResults(),
+
+              // Overlay loading indicator
+              if (_isLoadingGifs ||
+                  (_gifResults.isNotEmpty && !_hasLoadedFirstGif))
+                Container(
+                  color: AppTheme.grey900,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: AppTheme.primaryPurple,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading GIFs...',
+                          style: TextStyle(
+                            color: AppTheme.grey400,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -315,8 +419,30 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
       itemCount: _gifResults.length,
       itemBuilder: (context, index) {
         final gif = _gifResults[index];
-        final previewUrl = gif['media_formats']['tinygif']['url'];
-        final fullUrl = gif['media_formats']['gif']['url'];
+
+        // Tenor API v2 uses 'media_formats'
+        final mediaFormats = gif['media_formats'] as Map<String, dynamic>?;
+
+        // Try to get smallest/fastest loading format for preview
+        final nanogif = mediaFormats?['nanogif'] as Map<String, dynamic>?;
+        final tinygif = mediaFormats?['tinygif'] as Map<String, dynamic>?;
+        final mediumgif = mediaFormats?['mediumgif'] as Map<String, dynamic>?;
+        final gifFormat = mediaFormats?['gif'] as Map<String, dynamic>?;
+
+        // Use smallest available for preview (faster loading)
+        final previewUrl =
+            nanogif?['url'] as String? ??
+            tinygif?['url'] as String? ??
+            mediumgif?['url'] as String? ??
+            gifFormat?['url'] as String?;
+
+        // Use full size for sending
+        final fullUrl = gifFormat?['url'] as String? ?? previewUrl;
+
+        // Skip if URL is missing
+        if (previewUrl == null || fullUrl == null) {
+          return const SizedBox.shrink();
+        }
 
         return InkWell(
           onTap: () {
@@ -329,7 +455,17 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
               previewUrl,
               fit: BoxFit.cover,
               loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
+                if (loadingProgress == null) {
+                  // Mark that we've loaded at least one GIF
+                  if (!_hasLoadedFirstGif) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() => _hasLoadedFirstGif = true);
+                      }
+                    });
+                  }
+                  return child;
+                }
                 return Container(
                   color: AppTheme.grey800,
                   child: Center(

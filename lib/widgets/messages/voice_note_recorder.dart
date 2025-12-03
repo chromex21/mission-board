@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import '../../core/theme/app_theme.dart';
@@ -44,13 +43,10 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
   Future<void> _startRecording() async {
     try {
       if (await _audioRecorder.hasPermission()) {
-        String? filePath;
-        
-        // Web doesn't support file system paths the same way
-        if (!kIsWeb) {
-          final tempDir = Directory.systemTemp;
-          filePath = '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        }
+        // Get temporary directory for recording
+        final tempDir = Directory.systemTemp;
+        final filePath =
+            '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
         await _audioRecorder.start(
           const RecordConfig(
@@ -58,7 +54,7 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
             bitRate: 128000,
             sampleRate: 16000,
           ),
-          path: filePath, // null for web, which stores in memory
+          path: filePath,
         );
 
         setState(() {

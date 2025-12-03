@@ -17,7 +17,7 @@ class _CreateMissionViewState extends State<CreateMissionView> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _rewardController = TextEditingController();
-  
+
   int _difficulty = 1;
   MissionVisibility _visibility = MissionVisibility.public;
   bool _isSubmitting = false;
@@ -54,7 +54,7 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Enter a clear mission title',
-                  hintStyle: TextStyle(color: AppTheme.grey500),
+                  hintStyle: TextStyle(color: AppTheme.grey600),
                   filled: true,
                   fillColor: AppTheme.grey800,
                   border: OutlineInputBorder(
@@ -67,7 +67,10 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    borderSide: BorderSide(
+                      color: AppTheme.primaryPurple,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -91,7 +94,7 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   hintText: 'Describe what needs to be done...',
-                  hintStyle: TextStyle(color: AppTheme.grey500),
+                  hintStyle: TextStyle(color: AppTheme.grey600),
                   filled: true,
                   fillColor: AppTheme.grey800,
                   border: OutlineInputBorder(
@@ -104,7 +107,10 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    borderSide: BorderSide(
+                      color: AppTheme.primaryPurple,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -128,8 +134,11 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   hintText: '100',
-                  hintStyle: TextStyle(color: AppTheme.grey500),
-                  prefixIcon: Icon(Icons.monetization_on, color: AppTheme.warningYellow),
+                  hintStyle: TextStyle(color: AppTheme.grey600),
+                  prefixIcon: Icon(
+                    Icons.monetization_on,
+                    color: AppTheme.warningOrange,
+                  ),
                   filled: true,
                   fillColor: AppTheme.grey800,
                   border: OutlineInputBorder(
@@ -142,7 +151,10 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+                    borderSide: BorderSide(
+                      color: AppTheme.primaryPurple,
+                      width: 2,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -185,7 +197,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                           children: List.generate(
                             5,
                             (index) => Icon(
-                              index < _difficulty ? Icons.star : Icons.star_border,
+                              index < _difficulty
+                                  ? Icons.star
+                                  : Icons.star_border,
                               color: _getDifficultyColor(),
                               size: 20,
                             ),
@@ -230,7 +244,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                         label: 'Public',
                         icon: Icons.public,
                         isSelected: _visibility == MissionVisibility.public,
-                        onTap: () => setState(() => _visibility = MissionVisibility.public),
+                        onTap: () => setState(
+                          () => _visibility = MissionVisibility.public,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -238,7 +254,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                         label: 'Private',
                         icon: Icons.lock,
                         isSelected: _visibility == MissionVisibility.private,
-                        onTap: () => setState(() => _visibility = MissionVisibility.private),
+                        onTap: () => setState(
+                          () => _visibility = MissionVisibility.private,
+                        ),
                       ),
                     ),
                   ],
@@ -300,9 +318,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
       case 1:
         return AppTheme.successGreen;
       case 2:
-        return AppTheme.accentBlue;
+        return AppTheme.infoBlue;
       case 3:
-        return AppTheme.warningYellow;
+        return AppTheme.warningOrange;
       case 4:
         return Colors.orange;
       case 5:
@@ -338,7 +356,7 @@ class _CreateMissionViewState extends State<CreateMissionView> {
 
     try {
       final authProvider = context.read<AuthProvider>();
-      final currentUser = authProvider.currentUser;
+      final currentUser = authProvider.user;
 
       if (currentUser == null) {
         throw Exception('You must be logged in to create a mission');
@@ -351,18 +369,16 @@ class _CreateMissionViewState extends State<CreateMissionView> {
         reward: int.parse(_rewardController.text),
         difficulty: _difficulty,
         status: MissionStatus.open,
-        createdBy: currentUser.id,
+        createdBy: currentUser.uid,
         visibility: _visibility,
         createdAt: DateTime.now(),
       );
 
       await context.read<MissionProvider>().createMission(
             mission,
-            userName: currentUser.name,
-            userPhotoUrl: currentUser.photoUrl,
-          );
-
-      if (mounted) {
+            userName: currentUser.displayName ?? 'Anonymous',
+            userPhotoUrl: currentUser.photoURL,
+          );      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Mission created successfully!'),
@@ -409,7 +425,9 @@ class _VisibilityButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryPurple.withOpacity(0.2) : Colors.transparent,
+          color: isSelected
+              ? AppTheme.primaryPurple.withOpacity(0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: isSelected
               ? Border.all(color: AppTheme.primaryPurple, width: 2)

@@ -4,7 +4,6 @@ import '../../core/theme/app_theme.dart';
 import '../../models/mission_activity_model.dart';
 import '../../providers/mission_feed_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../common/loading_indicator.dart';
 
 class MissionFeedView extends StatefulWidget {
   const MissionFeedView({super.key});
@@ -51,7 +50,9 @@ class _MissionFeedViewState extends State<MissionFeedView> {
       body: Consumer<MissionFeedProvider>(
         builder: (context, feedProvider, child) {
           if (feedProvider.isLoading && feedProvider.activities.isEmpty) {
-            return const Center(child: LoadingIndicator());
+            return Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryPurple),
+            );
           }
 
           if (feedProvider.error != null) {
@@ -88,7 +89,7 @@ class _MissionFeedViewState extends State<MissionFeedView> {
                   const SizedBox(height: 8),
                   Text(
                     'Complete missions to see activity here',
-                    style: TextStyle(color: AppTheme.grey500, fontSize: 14),
+                    style: TextStyle(color: AppTheme.grey600, fontSize: 14),
                   ),
                 ],
               ),
@@ -124,7 +125,7 @@ class _ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final currentUserId = authProvider.currentUser?.id ?? '';
+    final currentUserId = authProvider.user?.uid ?? '';
     final isLiked = activity.likedBy.contains(currentUserId);
 
     return Container(
@@ -284,7 +285,7 @@ class _MissionCompletedCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppTheme.primaryPurple.withOpacity(0.1),
-            AppTheme.accentBlue.withOpacity(0.1),
+            AppTheme.infoBlue.withOpacity(0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -312,7 +313,7 @@ class _MissionCompletedCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             missionTitle,
-            style: TextStyle(color: AppTheme.grey300, fontSize: 15),
+            style: TextStyle(color: AppTheme.grey200, fontSize: 15),
           ),
           const SizedBox(height: 12),
           Row(
@@ -320,13 +321,13 @@ class _MissionCompletedCard extends StatelessWidget {
               _StatChip(
                 icon: Icons.monetization_on,
                 label: '$reward points',
-                color: AppTheme.warningYellow,
+                color: AppTheme.warningOrange,
               ),
               const SizedBox(width: 8),
               _StatChip(
                 icon: Icons.star,
                 label: 'Difficulty $difficulty',
-                color: AppTheme.accentBlue,
+                color: AppTheme.infoBlue,
               ),
             ],
           ),
@@ -353,7 +354,7 @@ class _PaymentReceivedCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppTheme.successGreen.withOpacity(0.1),
-            AppTheme.warningYellow.withOpacity(0.1),
+            AppTheme.warningOrange.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
@@ -424,7 +425,7 @@ class _LevelUpCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.primaryPurple, AppTheme.accentBlue],
+          colors: [AppTheme.primaryPurple, AppTheme.infoBlue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -495,11 +496,11 @@ class _MilestoneCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.grey700,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.warningYellow.withOpacity(0.5)),
+        border: Border.all(color: AppTheme.warningOrange.withOpacity(0.5)),
       ),
       child: Row(
         children: [
-          Icon(Icons.emoji_events, color: AppTheme.warningYellow, size: 32),
+          Icon(Icons.emoji_events, color: AppTheme.warningOrange, size: 32),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -517,7 +518,7 @@ class _MilestoneCard extends StatelessWidget {
                 Text(
                   '$count $milestone',
                   style: TextStyle(
-                    color: AppTheme.warningYellow,
+                    color: AppTheme.warningOrange,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -542,7 +543,7 @@ class _DefaultCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         'Activity: ${activity.type.name}',
-        style: TextStyle(color: AppTheme.grey300),
+        style: TextStyle(color: AppTheme.grey200),
       ),
     );
   }

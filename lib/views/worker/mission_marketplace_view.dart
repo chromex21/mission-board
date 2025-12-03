@@ -4,7 +4,6 @@ import '../../core/theme/app_theme.dart';
 import '../../models/mission_model.dart';
 import '../../providers/mission_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../common/loading_indicator.dart';
 
 class MissionMarketplaceView extends StatefulWidget {
   const MissionMarketplaceView({super.key});
@@ -65,7 +64,7 @@ class _MissionMarketplaceViewState extends State<MissionMarketplaceView>
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Search missions...',
-                hintStyle: TextStyle(color: AppTheme.grey500),
+                hintStyle: TextStyle(color: AppTheme.grey600),
                 prefixIcon: Icon(Icons.search, color: AppTheme.grey400),
                 filled: true,
                 fillColor: AppTheme.grey800,
@@ -126,7 +125,9 @@ class _AllMissionsTab extends StatelessWidget {
     return Consumer<MissionProvider>(
       builder: (context, missionProvider, child) {
         if (missionProvider.isLoading) {
-          return const Center(child: LoadingIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryPurple),
+          );
         }
 
         final openMissions = missionProvider.missions
@@ -173,12 +174,14 @@ class _MyMissionsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = context.watch<AuthProvider>().currentUser?.id ?? '';
+    final currentUserId = context.watch<AuthProvider>().user?.uid ?? '';
 
     return Consumer<MissionProvider>(
       builder: (context, missionProvider, child) {
         if (missionProvider.isLoading) {
-          return const Center(child: LoadingIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryPurple),
+          );
         }
 
         final myMissions = missionProvider.missions
@@ -240,12 +243,14 @@ class _AcceptedMissionsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = context.watch<AuthProvider>().currentUser?.id ?? '';
+    final currentUserId = context.watch<AuthProvider>().user?.uid ?? '';
 
     return Consumer<MissionProvider>(
       builder: (context, missionProvider, child) {
         if (missionProvider.isLoading) {
-          return const Center(child: LoadingIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AppTheme.primaryPurple),
+          );
         }
 
         final acceptedMissions = missionProvider.missions
@@ -371,13 +376,13 @@ class _MissionCard extends StatelessWidget {
                   _MissionStat(
                     icon: Icons.monetization_on,
                     label: '${mission.reward} pts',
-                    color: AppTheme.warningYellow,
+                    color: AppTheme.warningOrange,
                   ),
                   const SizedBox(width: 16),
                   _MissionStat(
                     icon: Icons.star,
                     label: 'Level ${mission.difficulty}',
-                    color: AppTheme.accentBlue,
+                    color: AppTheme.infoBlue,
                   ),
                   const Spacer(),
                   if (!isOwnMission &&
@@ -410,16 +415,16 @@ class _MissionCard extends StatelessWidget {
       case MissionStatus.open:
         return AppTheme.successGreen;
       case MissionStatus.assigned:
-        return AppTheme.accentBlue;
+        return AppTheme.infoBlue;
       case MissionStatus.pendingReview:
-        return AppTheme.warningYellow;
+        return AppTheme.warningOrange;
       case MissionStatus.completed:
         return AppTheme.grey600;
     }
   }
 
   void _acceptMission(BuildContext context) {
-    final currentUserId = context.read<AuthProvider>().currentUser?.id ?? '';
+    final currentUserId = context.read<AuthProvider>().user?.uid ?? '';
 
     showDialog(
       context: context,
@@ -431,7 +436,7 @@ class _MissionCard extends StatelessWidget {
         ),
         content: Text(
           'Do you want to accept "${mission.title}"?',
-          style: TextStyle(color: AppTheme.grey300),
+          style: TextStyle(color: AppTheme.grey200),
         ),
         actions: [
           TextButton(
@@ -481,11 +486,11 @@ class _StatusBadge extends StatelessWidget {
         label = 'OPEN';
         break;
       case MissionStatus.assigned:
-        color = AppTheme.accentBlue;
+        color = AppTheme.infoBlue;
         label = 'ASSIGNED';
         break;
       case MissionStatus.pendingReview:
-        color = AppTheme.warningYellow;
+        color = AppTheme.warningOrange;
         label = 'PENDING';
         break;
       case MissionStatus.completed:

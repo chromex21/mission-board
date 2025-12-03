@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../worker/mission_board_screen.dart';
 import '../worker/history_screen.dart';
 import '../worker/leaderboard_screen.dart';
+import '../worker/mission_feed_view.dart';
+import '../worker/mission_marketplace_view.dart';
 import '../team/teams_screen.dart';
 import '../admin/admin_panel_screen.dart';
 import 'profile_screen.dart';
@@ -31,6 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     switch (_currentRoute) {
+      case '/mission-feed':
+        return MissionFeedView(onNavigate: _handleNavigation);
+      case '/mission-marketplace':
+        return MissionMarketplaceView(onNavigate: _handleNavigation);
       case '/missions':
         return MissionBoardScreen(onNavigate: _handleNavigation);
       case '/missions/history':

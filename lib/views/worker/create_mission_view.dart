@@ -375,10 +375,11 @@ class _CreateMissionViewState extends State<CreateMissionView> {
       );
 
       await context.read<MissionProvider>().createMission(
-            mission,
-            userName: currentUser.displayName ?? 'Anonymous',
-            userPhotoUrl: currentUser.photoURL,
-          );      if (mounted) {
+        mission,
+        userName: currentUser.displayName ?? 'Anonymous',
+        userPhotoUrl: currentUser.photoURL,
+      );
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Mission created successfully!'),

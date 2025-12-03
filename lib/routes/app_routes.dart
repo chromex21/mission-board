@@ -58,7 +58,9 @@ class AppRoutes {
       case AppRoutes.missionFeed:
         return MaterialPageRoute(builder: (_) => const MissionFeedView());
       case AppRoutes.missionMarketplace:
-        return MaterialPageRoute(builder: (_) => const MissionMarketplaceView());
+        return MaterialPageRoute(
+          builder: (_) => const MissionMarketplaceView(),
+        );
       case AppRoutes.createMission:
         return MaterialPageRoute(builder: (_) => const CreateMissionView());
       case AppRoutes.createTeamMission:

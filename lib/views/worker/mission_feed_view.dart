@@ -4,9 +4,12 @@ import '../../core/theme/app_theme.dart';
 import '../../models/mission_activity_model.dart';
 import '../../providers/mission_feed_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/layout/app_layout.dart';
 
 class MissionFeedView extends StatefulWidget {
-  const MissionFeedView({super.key});
+  final Function(String)? onNavigate;
+
+  const MissionFeedView({super.key, this.onNavigate});
 
   @override
   State<MissionFeedView> createState() => _MissionFeedViewState();
@@ -40,14 +43,11 @@ class _MissionFeedViewState extends State<MissionFeedView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.grey900,
-      appBar: AppBar(
-        backgroundColor: AppTheme.grey800,
-        title: const Text('Mission Feed'),
-        elevation: 0,
-      ),
-      body: Consumer<MissionFeedProvider>(
+    return AppLayout(
+      currentRoute: '/mission-feed',
+      title: 'Mission Feed',
+      onNavigate: widget.onNavigate ?? (route) {},
+      child: Consumer<MissionFeedProvider>(
         builder: (context, feedProvider, child) {
           if (feedProvider.isLoading && feedProvider.activities.isEmpty) {
             return Center(

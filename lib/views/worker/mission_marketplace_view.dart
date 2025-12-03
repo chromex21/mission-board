@@ -4,9 +4,12 @@ import '../../core/theme/app_theme.dart';
 import '../../models/mission_model.dart';
 import '../../providers/mission_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/layout/app_layout.dart';
 
 class MissionMarketplaceView extends StatefulWidget {
-  const MissionMarketplaceView({super.key});
+  final Function(String)? onNavigate;
+
+  const MissionMarketplaceView({super.key, this.onNavigate});
 
   @override
   State<MissionMarketplaceView> createState() => _MissionMarketplaceViewState();
@@ -36,80 +39,94 @@ class _MissionMarketplaceViewState extends State<MissionMarketplaceView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.grey900,
-      appBar: AppBar(
-        backgroundColor: AppTheme.grey800,
-        title: const Text('Mission Marketplace'),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppTheme.primaryPurple,
-          labelColor: Colors.white,
-          unselectedLabelColor: AppTheme.grey400,
-          tabs: const [
-            Tab(text: 'All Missions'),
-            Tab(text: 'My Missions'),
-            Tab(text: 'Accepted'),
-          ],
-        ),
-      ),
-      body: Column(
+    return AppLayout(
+      currentRoute: '/mission-marketplace',
+      title: 'Mission Marketplace',
+      onNavigate: widget.onNavigate ?? (route) {},
+      child: Stack(
         children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search missions...',
-                hintStyle: TextStyle(color: AppTheme.grey600),
-                prefixIcon: Icon(Icons.search, color: AppTheme.grey400),
-                filled: true,
-                fillColor: AppTheme.grey800,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppTheme.grey700),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppTheme.grey700),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppTheme.primaryPurple,
-                    width: 2,
-                  ),
+          Column(
+            children: [
+              // Tabs
+              Container(
+                color: AppTheme.grey800,
+                child: TabBar(
+                  controller: _tabController,
+                  indicatorColor: AppTheme.primaryPurple,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: AppTheme.grey400,
+                  tabs: const [
+                    Tab(text: 'All Missions'),
+                    Tab(text: 'My Missions'),
+                    Tab(text: 'Accepted'),
+                  ],
                 ),
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value.toLowerCase());
-              },
-            ),
-          ),
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search missions...',
+                    hintStyle: TextStyle(color: AppTheme.grey600),
+                    prefixIcon: Icon(Icons.search, color: AppTheme.grey400),
+                    filled: true,
+                    fillColor: AppTheme.grey800,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.grey700),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.grey700),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppTheme.primaryPurple,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value.toLowerCase());
+                  },
+                ),
+              ),
 
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _AllMissionsTab(searchQuery: _searchQuery),
-                _MyMissionsTab(searchQuery: _searchQuery),
-                _AcceptedMissionsTab(searchQuery: _searchQuery),
-              ],
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _AllMissionsTab(searchQuery: _searchQuery),
+                    _MyMissionsTab(searchQuery: _searchQuery),
+                    _AcceptedMissionsTab(searchQuery: _searchQuery),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // FAB
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                if (widget.onNavigate != null) {
+                  widget.onNavigate!('/create-mission');
+                } else {
+                  Navigator.pushNamed(context, '/create-mission');
+                }
+              },
+              backgroundColor: AppTheme.primaryPurple,
+              icon: const Icon(Icons.add),
+              label: const Text('Create Mission'),
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, '/create-mission');
-        },
-        backgroundColor: AppTheme.primaryPurple,
-        icon: const Icon(Icons.add),
-        label: const Text('Create Mission'),
       ),
     );
   }

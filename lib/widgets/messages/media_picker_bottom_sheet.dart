@@ -153,47 +153,89 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
   }
 
   Widget _buildGifTab() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1,
-      ),
-      itemCount: _gifCategories.length,
-      itemBuilder: (context, index) {
-        final category = _gifCategories[index];
-        return InkWell(
-          onTap: () {
-            // Use Tenor GIF API placeholder (you'd need to integrate actual API)
-            final gifUrl =
-                'https://media.tenor.com/images/${category.replaceAll(' ', '')}.gif';
-            widget.onMediaSelected(gifUrl, MediaType.gif);
-            Navigator.pop(context);
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.grey800,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.grey700),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.gif_box, size: 32, color: Colors.white70),
-                const SizedBox(height: 4),
-                Text(
-                  category,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(16),
+          margin: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.warningOrange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: AppTheme.warningOrange.withValues(alpha: 0.3),
             ),
           ),
-        );
-      },
+          child: Row(
+            children: [
+              Icon(Icons.warning, color: AppTheme.warningOrange, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'GIF integration requires Tenor API key. Please configure in settings.',
+                  style: TextStyle(color: AppTheme.warningOrange, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1,
+            ),
+            itemCount: _gifCategories.length,
+            itemBuilder: (context, index) {
+              final category = _gifCategories[index];
+              return InkWell(
+                onTap: () {
+                  // TODO: Replace with actual Tenor API integration
+                  // For now, this is a placeholder that won't show real GIFs
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'GIF feature requires Tenor API configuration',
+                      ),
+                      backgroundColor: AppTheme.warningOrange,
+                    ),
+                  );
+                  Navigator.pop(context);
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.grey800,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.grey700),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.gif_box,
+                        size: 32,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        category,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

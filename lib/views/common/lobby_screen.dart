@@ -44,7 +44,9 @@ class LobbyScreen extends StatelessWidget {
                           color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? AppTheme.grey700 : AppTheme.lightBorder,
+                            color: isDark
+                                ? AppTheme.grey700
+                                : AppTheme.lightBorder,
                           ),
                         ),
                         child: const _ActiveUsersPanel(),
@@ -52,75 +54,6 @@ class LobbyScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-
-          // Floating button for mobile only - positioned in bottom-left corner
-          if (isMobile)
-            Positioned(
-              bottom: 80,
-              left: 16,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(16),
-                color: AppTheme.primaryPurple,
-                child: InkWell(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (context) => Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            // Handle bar
-                            Container(
-                              margin: const EdgeInsets.symmetric(vertical: 12),
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: isDark ? AppTheme.grey600 : AppTheme.lightBorder,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: _ActiveUsersPanel(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.people, color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Active',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -303,7 +236,9 @@ class _ActiveUsersPanel extends StatelessWidget {
                               color: AppTheme.successGreen,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isDark ? AppTheme.grey900 : AppTheme.lightCard,
+                                color: isDark
+                                    ? AppTheme.grey900
+                                    : AppTheme.lightCard,
                                 width: 2,
                               ),
                             ),

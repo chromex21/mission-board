@@ -62,62 +62,107 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
 
           const SizedBox(width: 32),
 
-          // Search bar
+          // Search bar (hide on mobile if width is constrained)
           if (searchController != null && onSearchChanged != null)
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: TextField(
-                  controller: searchController,
-                  onChanged: onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: 'Search missions...',
-                    prefixIcon: Icon(
-                      Icons.search,
-                      size: 20,
-                      color: AppTheme.grey400,
-                    ),
-                    suffixIcon: searchController!.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.clear,
-                              size: 18,
-                              color: AppTheme.grey400,
-                            ),
-                            onPressed: () {
-                              searchController!.clear();
-                              onSearchChanged!('');
-                            },
-                            tooltip: 'Clear search',
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: AppTheme.grey800,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.grey700),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.grey700),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: AppTheme.primaryPurple,
-                        width: 2,
+            if (MediaQuery.of(context).size.width > 600)
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Search missions...',
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 20,
+                        color: AppTheme.grey400,
                       ),
+                      suffixIcon: searchController!.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: AppTheme.grey400,
+                              ),
+                              onPressed: () {
+                                searchController!.clear();
+                                onSearchChanged!('');
+                              },
+                              tooltip: 'Clear search',
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: AppTheme.grey800,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppTheme.grey700),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppTheme.grey700),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: AppTheme.primaryPurple,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      isDense: true,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    isDense: true,
+                    style: const TextStyle(fontSize: 14, color: Colors.white),
                   ),
-                  style: const TextStyle(fontSize: 14, color: Colors.white),
                 ),
+              )
+            else
+              // Search icon button for mobile
+              IconButton(
+                icon: Icon(Icons.search, color: AppTheme.grey400),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: AppTheme.grey900,
+                      title: Text('Search Missions'),
+                      content: TextField(
+                        controller: searchController,
+                        onChanged: onSearchChanged,
+                        autofocus: true,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Search missions...',
+                          hintStyle: TextStyle(color: AppTheme.grey400),
+                          filled: true,
+                          fillColor: AppTheme.grey800,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            searchController!.clear();
+                            onSearchChanged!('');
+                            Navigator.pop(context);
+                          },
+                          child: Text('Clear'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Done'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                tooltip: 'Search',
               ),
-            ),
 
           const Spacer(),
 

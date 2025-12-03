@@ -71,9 +71,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         ),
         title: Text(
           widget.otherUserName,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppTheme.lightText,
-          ),
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.lightText),
         ),
       ),
       body: Column(

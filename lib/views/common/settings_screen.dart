@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/theme_provider.dart';
 import '../../services/sound_service.dart';
 import '../../services/update_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -26,7 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final soundService = Provider.of<SoundService>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return AppLayout(
       currentRoute: '/settings',
@@ -138,42 +136,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Preferences Section
-            _SectionHeader(title: 'Appearance'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: SwitchListTile(
-                secondary: Icon(
-                  themeProvider.isDarkMode
-                      ? Icons.light_mode_outlined
-                      : Icons.dark_mode_outlined,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-                title: const Text('Light Theme'),
-                subtitle: Text(
-                  themeProvider.isDarkMode
-                      ? 'Switch to light mode'
-                      : 'Switch to dark mode',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                value: !themeProvider.isDarkMode,
-                onChanged: (value) {
-                  themeProvider.toggleTheme();
-                },
-                activeThumbColor: AppTheme.primaryPurple,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -485,7 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final updateInfo = await UpdateService.checkForUpdate();
-      
+
       if (!context.mounted) return;
       Navigator.pop(context); // Close loading dialog
 
@@ -517,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!context.mounted) return;
       Navigator.pop(context); // Close loading dialog
-      
+
       context.showError('Failed to check for updates. Please try again later.');
     }
   }

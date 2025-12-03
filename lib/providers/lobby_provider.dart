@@ -119,18 +119,18 @@ class LobbyProvider extends ChangeNotifier {
     try {
       final cutoffTime = DateTime.now().subtract(const Duration(hours: 12));
       final cutoffTimestamp = Timestamp.fromDate(cutoffTime);
-      
+
       final oldMessages = await _db
           .collection('lobby')
           .where('createdAt', isLessThan: cutoffTimestamp)
           .get();
-      
+
       // Delete old messages in batch
       final batch = _db.batch();
       for (var doc in oldMessages.docs) {
         batch.delete(doc.reference);
       }
-      
+
       if (oldMessages.docs.isNotEmpty) {
         await batch.commit();
         print('🗑️ Cleaned up ${oldMessages.docs.length} old lobby messages');

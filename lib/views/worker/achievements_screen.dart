@@ -22,9 +22,7 @@ class AchievementsScreen extends StatelessWidget {
         backgroundColor: isDark ? AppTheme.grey900 : Colors.white,
         title: Text(
           'Achievements',
-          style: TextStyle(
-            color: isDark ? Colors.white : AppTheme.lightText,
-          ),
+          style: TextStyle(color: isDark ? Colors.white : AppTheme.lightText),
         ),
         iconTheme: IconThemeData(
           color: isDark ? Colors.white : AppTheme.lightText,
@@ -90,7 +88,9 @@ class AchievementsScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: unlockedIds.length / Achievements.all.length,
-                          backgroundColor: isDark ? AppTheme.grey700 : AppTheme.lightBorder,
+                          backgroundColor: isDark
+                              ? AppTheme.grey700
+                              : AppTheme.lightBorder,
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             AppTheme.primaryPurple,
                           ),
@@ -102,7 +102,9 @@ class AchievementsScreen extends StatelessWidget {
                         '${((unlockedIds.length / Achievements.all.length) * 100).toStringAsFixed(0)}% Complete',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppTheme.grey400 : AppTheme.lightSubtext,
+                          color: isDark
+                              ? AppTheme.grey400
+                              : AppTheme.lightSubtext,
                         ),
                       ),
                     ],

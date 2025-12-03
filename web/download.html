@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Board - Download</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .version {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .file-size {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .update-note {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .platform-note {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 12px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+            color: #742a2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🎯</div>
+        <h1>Mission Board</h1>
+        <div class="version">Version 1.0.0 (Build 1)</div>
+        <p class="description">
+            Transform your daily tasks into exciting missions. Track progress, compete with friends, 
+            and level up your productivity!
+        </p>
+
+        <a href="YOUR_APK_DOWNLOAD_URL_HERE" class="download-btn" download>
+            📥 Download for Android
+        </a>
+
+        <div class="file-size">APK Size: ~58 MB</div>
+
+        <div class="platform-note">
+            <strong>⚠️ Installation Note:</strong><br>
+            You'll need to enable "Install from Unknown Sources" in your Android settings. 
+            This is normal for apps not from Play Store.
+        </div>
+
+        <div class="update-note">
+            <strong>🔄 Auto-Updates:</strong> The app checks for new versions automatically 
+            and will prompt you when updates are available!
+        </div>
+
+        <div class="features">
+            <h3>Features</h3>
+            <ul class="feature-list">
+                <li>Create personal and team missions</li>
+                <li>Track progress and earn rewards</li>
+                <li>Team collaboration with chat</li>
+                <li>Leaderboards and achievements</li>
+                <li>Real-time notifications</li>
+                <li>Dark mode interface</li>
+                <li>Automatic updates</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Track download clicks
+        document.querySelector('.download-btn').addEventListener('click', function() {
+            console.log('Download initiated:', new Date().toISOString());
+            // You can add analytics here if needed
+        });
+    </script>
+</body>
+</html>

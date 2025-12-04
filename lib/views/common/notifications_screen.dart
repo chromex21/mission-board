@@ -74,6 +74,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return StreamBuilder<List<FriendRequest>>(
       stream: friendsProvider.streamFriendRequests(userId),
       builder: (context, snapshot) {
+        debugPrint(
+          '📬 Friend Requests Stream - State: ${snapshot.connectionState}',
+        );
+        debugPrint(
+          '   Has Data: ${snapshot.hasData}, Count: ${snapshot.data?.length ?? 0}',
+        );
+        debugPrint(
+          '   Has Error: ${snapshot.hasError}, Error: ${snapshot.error}',
+        );
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
             child: Column(
@@ -267,6 +277,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return StreamBuilder<List<AppNotification>>(
       stream: notificationProvider.streamNotifications(userId),
       builder: (context, snapshot) {
+        debugPrint(
+          '🔔 All Notifications Stream - State: ${snapshot.connectionState}',
+        );
+        debugPrint('   User ID: $userId');
+        debugPrint(
+          '   Has Data: ${snapshot.hasData}, Count: ${snapshot.data?.length ?? 0}',
+        );
+        debugPrint(
+          '   Has Error: ${snapshot.hasError}, Error: ${snapshot.error}',
+        );
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          debugPrint('   First notification: ${snapshot.data!.first.title}');
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }

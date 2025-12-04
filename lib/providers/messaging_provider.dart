@@ -81,26 +81,56 @@ class MessagingProvider with ChangeNotifier {
             'readBy': [senderId], // Sender has "read" their own message
           });
 
-      // Update conversation metadata
-      final updateData = <String, dynamic>{
-        'lastMessage': content,
-        'lastMessageSenderId': senderId,
-        'lastMessageTime': now,
-        'unreadCount.$senderId': 0,
-        'updatedAt': now,
-      };
+      // Get current conversation to access unread counts
+      final conversationDoc = await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .get();
 
-      // Increment unread count for other participants
+      if (!conversationDoc.exists) {
+        throw Exception('Conversation not found');
+      }
+
+      final conversationData = conversationDoc.data()!;
+      final currentUnreadCount = Map<String, dynamic>.from(
+        conversationData['unreadCount'] ?? {},
+      );
+
+      // Update unread counts
+      currentUnreadCount[senderId] = 0;
       for (var participantId in participants) {
         if (participantId != senderId) {
-          updateData['unreadCount.$participantId'] = FieldValue.increment(1);
+          currentUnreadCount[participantId] =
+              (currentUnreadCount[participantId] ?? 0) + 1;
         }
       }
 
-      await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .update(updateData);
+      // Update conversation with all changes at once
+      await _firestore.collection('conversations').doc(conversationId).update({
+        'lastMessage': content,
+        'lastMessageSenderId': senderId,
+        'lastMessageTime': now,
+        'unreadCount': currentUnreadCount,
+        'updatedAt': now,
+      });
+
+      // Create notifications for recipients
+      for (var participantId in participants) {
+        if (participantId != senderId) {
+          await _firestore.collection('notifications').add({
+            'userId': participantId,
+            'type': 'newMessage',
+            'title': 'New Message',
+            'message':
+                '$senderName: ${type == MessageType.text ? content : type.name}',
+            'actorName': senderName,
+            'actorId': senderId,
+            'actionId': conversationId,
+            'isRead': false,
+            'createdAt': now,
+          });
+        }
+      }
     } catch (e) {
       throw Exception('Failed to send message: $e');
     }
@@ -119,19 +149,25 @@ class MessagingProvider with ChangeNotifier {
       });
 
       // Update messages in batch
-      final unreadMessages = await _firestore
+      // Note: Cannot combine isNotEqualTo with whereNotIn, so we filter in memory
+      final allMessages = await _firestore
           .collection('conversations')
           .doc(conversationId)
           .collection('messages')
-          .where('senderId', isNotEqualTo: userId)
-          .where('readBy', whereNotIn: [userId])
           .get();
 
       final batch = _firestore.batch();
-      for (var doc in unreadMessages.docs) {
-        batch.update(doc.reference, {
-          'readBy': FieldValue.arrayUnion([userId]),
-        });
+      for (var doc in allMessages.docs) {
+        final data = doc.data();
+        final senderId = data['senderId'] as String?;
+        final readBy = (data['readBy'] as List<dynamic>?) ?? [];
+
+        // Only mark as read if: sent by someone else AND not already read by user
+        if (senderId != userId && !readBy.contains(userId)) {
+          batch.update(doc.reference, {
+            'readBy': FieldValue.arrayUnion([userId]),
+          });
+        }
       }
       await batch.commit();
     } catch (e) {
@@ -230,6 +266,54 @@ class MessagingProvider with ChangeNotifier {
   }
 
   // Production: remove demo message population
+
+  /// Add reaction to message
+  Future<void> addReaction({
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+    required String userId,
+  }) async {
+    try {
+      final now = Timestamp.fromDate(DateTime.now());
+
+      await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .doc(messageId)
+          .update({
+            'reactions': FieldValue.arrayUnion([
+              {'emoji': emoji, 'userId': userId, 'timestamp': now},
+            ]),
+          });
+    } catch (e) {
+      throw Exception('Failed to add reaction: $e');
+    }
+  }
+
+  /// Remove reaction from message
+  Future<void> removeReaction({
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+    required String userId,
+  }) async {
+    try {
+      await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .doc(messageId)
+          .update({
+            'reactions': FieldValue.arrayRemove([
+              {'emoji': emoji, 'userId': userId},
+            ]),
+          });
+    } catch (e) {
+      throw Exception('Failed to remove reaction: $e');
+    }
+  }
 
   // Production: remove local (offline) demo support
 }

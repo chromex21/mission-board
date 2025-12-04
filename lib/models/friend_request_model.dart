@@ -74,6 +74,10 @@ class AppNotification {
   final String? actionId; // Related mission/conversation/etc ID
   final bool isRead;
   final DateTime createdAt;
+  final String?
+  deepLinkRoute; // Route to navigate when tapped (e.g., '/missions/123')
+  final Map<String, dynamic>?
+  actionData; // Extra data for actions (button labels, callbacks)
 
   AppNotification({
     required this.id,
@@ -86,6 +90,8 @@ class AppNotification {
     this.actionId,
     this.isRead = false,
     required this.createdAt,
+    this.deepLinkRoute,
+    this.actionData,
   });
 
   factory AppNotification.fromMap(Map<String, dynamic> map, String id) {
@@ -103,6 +109,10 @@ class AppNotification {
       actionId: map['actionId'],
       isRead: map['isRead'] ?? false,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      deepLinkRoute: map['deepLinkRoute'],
+      actionData: map['actionData'] != null
+          ? Map<String, dynamic>.from(map['actionData'])
+          : null,
     );
   }
 
@@ -117,6 +127,29 @@ class AppNotification {
       'actionId': actionId,
       'isRead': isRead,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (deepLinkRoute != null) 'deepLinkRoute': deepLinkRoute,
+      if (actionData != null) 'actionData': actionData,
     };
+  }
+
+  /// Generate deep link based on notification type
+  String getDefaultRoute() {
+    if (deepLinkRoute != null) return deepLinkRoute!;
+
+    switch (type) {
+      case NotificationType.friendRequest:
+        return actorId != null ? '/profile/$actorId' : '/friends';
+      case NotificationType.friendRequestAccepted:
+        return actorId != null ? '/messages/$actorId' : '/messages';
+      case NotificationType.newMessage:
+        return actionId != null ? '/messages/$actionId' : '/messages';
+      case NotificationType.missionAssigned:
+      case NotificationType.missionCompleted:
+      case NotificationType.missionApproved:
+        return actionId != null ? '/missions/$actionId/detail' : '/missions';
+      case NotificationType.levelUp:
+      case NotificationType.achievementUnlocked:
+        return '/profile';
+    }
   }
 }

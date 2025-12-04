@@ -45,7 +45,7 @@ class FriendsProvider with ChangeNotifier {
         );
       }
 
-      // Check if they sent you a request (reverse)
+      // Check if they sent you a request (reverse) - if so, AUTO-ACCEPT IT
       final reverse = await _firestore
           .collection('friendRequests')
           .where('senderId', isEqualTo: receiverId)
@@ -54,13 +54,17 @@ class FriendsProvider with ChangeNotifier {
           .get();
 
       if (reverse.docs.isNotEmpty) {
-        throw Exception(
-          'This user has already sent you a friend request! Check your notifications.',
+        // They already sent you a request - accept it instead of creating new one
+        debugPrint(
+          '🤝 Found existing request from other user - auto-accepting',
         );
+        final requestId = reverse.docs.first.id;
+        await acceptFriendRequest(requestId, senderId);
+        return; // Don't create a new request
       }
 
       // Create friend request
-      await _firestore.collection('friendRequests').add({
+      final requestDoc = await _firestore.collection('friendRequests').add({
         'senderId': senderId,
         'senderName': senderName,
         'receiverId': receiverId,
@@ -68,19 +72,24 @@ class FriendsProvider with ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
         'respondedAt': null,
       });
+      debugPrint('✅ Created friend request: ${requestDoc.id}');
 
       // Create notification for receiver
-      await _firestore.collection('notifications').add({
+      final notifDoc = await _firestore.collection('notifications').add({
         'userId': receiverId,
         'type': 'friendRequest',
         'title': 'New Friend Request',
         'message': '$senderName sent you a friend request',
         'actorId': senderId,
         'actorName': senderName,
-        'actionId': null,
+        'actionId': requestDoc.id,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      debugPrint(
+        '✅ Created notification: ${notifDoc.id} for user: $receiverId',
+      );
+      debugPrint('   Message: $senderName sent you a friend request');
     } catch (e) {
       throw Exception('Failed to send friend request: $e');
     }
@@ -194,6 +203,43 @@ class FriendsProvider with ChangeNotifier {
       notifyListeners();
       return _friends;
     });
+  }
+
+  /// Check if there's ANY pending request between two users (either direction)
+  Future<String?> getPendingRequestBetween(
+    String userId,
+    String otherUserId,
+  ) async {
+    try {
+      // Check if userId sent to otherUserId
+      final sent = await _firestore
+          .collection('friendRequests')
+          .where('senderId', isEqualTo: userId)
+          .where('receiverId', isEqualTo: otherUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (sent.docs.isNotEmpty) {
+        return 'sent'; // You sent request
+      }
+
+      // Check if otherUserId sent to userId
+      final received = await _firestore
+          .collection('friendRequests')
+          .where('senderId', isEqualTo: otherUserId)
+          .where('receiverId', isEqualTo: userId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (received.docs.isNotEmpty) {
+        return 'received'; // You received request
+      }
+
+      return null; // No pending requests
+    } catch (e) {
+      debugPrint('Error checking pending requests: $e');
+      return null;
+    }
   }
 
   /// Update online status

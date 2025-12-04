@@ -12,6 +12,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
 import '../../models/conversation_model.dart';
 import 'media_picker_bottom_sheet.dart';
+import 'media_preview_screen.dart';
+import 'voice_note_recorder.dart';
 
 class RichMessageInput extends StatefulWidget {
   final String conversationId;
@@ -32,6 +34,8 @@ class _RichMessageInputState extends State<RichMessageInput> {
   final ImagePicker _imagePicker = ImagePicker();
   bool _showEmojiPicker = false;
   bool _isUploading = false;
+  double _uploadProgress = 0.0;
+  String _uploadStatus = '';
 
   @override
   void dispose() {
@@ -84,7 +88,36 @@ class _RichMessageInputState extends State<RichMessageInput> {
       );
 
       if (image != null) {
-        await _uploadAndSendFile(image.path, MessageType.image);
+        // Show preview with editor
+        final imageData = kIsWeb ? await image.readAsBytes() : null;
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MediaPreviewScreen(
+              imageFile: kIsWeb ? imageData : File(image.path),
+              fileName: image.name,
+              isWeb: kIsWeb,
+            ),
+          ),
+        );
+
+        if (result != null && result['confirmed'] == true) {
+          if (kIsWeb) {
+            final bytes = await image.readAsBytes();
+            await _uploadAndSendFileWeb(
+              bytes,
+              image.name,
+              MessageType.image,
+              caption: result['caption'],
+            );
+          } else {
+            await _uploadAndSendFile(
+              image.path,
+              MessageType.image,
+              caption: result['caption'],
+            );
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -96,6 +129,31 @@ class _RichMessageInputState extends State<RichMessageInput> {
         );
       }
     }
+  }
+
+  Future<void> _recordVoiceNote() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => VoiceNoteRecorder(
+        onRecordComplete: (filePath, duration) async {
+          if (mounted) {
+            Navigator.pop(dialogContext);
+            await _uploadAndSendFile(
+              filePath,
+              MessageType.voice,
+              fileName:
+                  'voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a',
+            );
+          }
+        },
+        onCancel: () {
+          if (mounted) {
+            Navigator.pop(dialogContext);
+          }
+        },
+      ),
+    );
   }
 
   Future<void> _pickFile() async {
@@ -139,8 +197,9 @@ class _RichMessageInputState extends State<RichMessageInput> {
       backgroundColor: Colors.transparent,
       builder: (context) => MediaPickerBottomSheet(
         onMediaSelected: (url, type) async {
-          Navigator.pop(context);
+          final nav = Navigator.of(context);
           await _sendGif(url);
+          if (mounted) nav.pop();
         },
       ),
     );
@@ -188,8 +247,13 @@ class _RichMessageInputState extends State<RichMessageInput> {
     String filePath,
     MessageType type, {
     String? fileName,
+    String? caption,
   }) async {
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+      _uploadStatus = 'Preparing...';
+    });
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final messagingProvider = Provider.of<MessagingProvider>(
@@ -204,14 +268,37 @@ class _RichMessageInputState extends State<RichMessageInput> {
         'messages/${widget.conversationId}/${DateTime.now().millisecondsSinceEpoch}_$name',
       );
 
-      final uploadTask = await storageRef.putFile(file);
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      setState(() => _uploadStatus = 'Uploading...');
+
+      // Upload with progress tracking
+      final uploadTask = storageRef.putFile(file);
+
+      uploadTask.snapshotEvents.listen((taskSnapshot) {
+        if (mounted) {
+          setState(() {
+            _uploadProgress =
+                taskSnapshot.bytesTransferred / taskSnapshot.totalBytes;
+          });
+        }
+      });
+
+      await uploadTask;
+      setState(() => _uploadStatus = 'Getting URL...');
+
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      setState(() => _uploadStatus = 'Sending message...');
+
+      // Send message with caption if provided
+      final messageContent = caption != null && caption.isNotEmpty
+          ? '$downloadUrl|caption:$caption'
+          : downloadUrl;
 
       await messagingProvider.sendMessage(
         conversationId: widget.conversationId,
         senderId: authProvider.appUser!.uid,
         senderName: authProvider.appUser!.displayName ?? 'Unknown',
-        content: downloadUrl,
+        content: messageContent,
         participants: [authProvider.appUser!.uid, widget.recipientId],
         type: type,
       );
@@ -221,6 +308,7 @@ class _RichMessageInputState extends State<RichMessageInput> {
           SnackBar(
             content: Text('${type.name.toUpperCase()} sent successfully'),
             backgroundColor: AppTheme.successGreen,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -235,7 +323,11 @@ class _RichMessageInputState extends State<RichMessageInput> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isUploading = false);
+        setState(() {
+          _isUploading = false;
+          _uploadProgress = 0.0;
+          _uploadStatus = '';
+        });
       }
     }
   }
@@ -243,9 +335,14 @@ class _RichMessageInputState extends State<RichMessageInput> {
   Future<void> _uploadAndSendFileWeb(
     List<int> bytes,
     String fileName,
-    MessageType type,
-  ) async {
-    setState(() => _isUploading = true);
+    MessageType type, {
+    String? caption,
+  }) async {
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+      _uploadStatus = 'Preparing...';
+    });
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final messagingProvider = Provider.of<MessagingProvider>(
@@ -258,14 +355,37 @@ class _RichMessageInputState extends State<RichMessageInput> {
         'messages/${widget.conversationId}/${DateTime.now().millisecondsSinceEpoch}_$fileName',
       );
 
-      final uploadTask = await storageRef.putData(Uint8List.fromList(bytes));
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      setState(() => _uploadStatus = 'Uploading...');
+
+      // Upload with progress tracking
+      final uploadTask = storageRef.putData(Uint8List.fromList(bytes));
+
+      uploadTask.snapshotEvents.listen((taskSnapshot) {
+        if (mounted) {
+          setState(() {
+            _uploadProgress =
+                taskSnapshot.bytesTransferred / taskSnapshot.totalBytes;
+          });
+        }
+      });
+
+      await uploadTask;
+      setState(() => _uploadStatus = 'Getting URL...');
+
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      setState(() => _uploadStatus = 'Sending message...');
+
+      // Send message with caption if provided
+      final messageContent = caption != null && caption.isNotEmpty
+          ? '$downloadUrl|caption:$caption'
+          : downloadUrl;
 
       await messagingProvider.sendMessage(
         conversationId: widget.conversationId,
         senderId: authProvider.appUser!.uid,
         senderName: authProvider.appUser!.displayName ?? 'Unknown',
-        content: downloadUrl,
+        content: messageContent,
         participants: [authProvider.appUser!.uid, widget.recipientId],
         type: type,
       );
@@ -275,6 +395,7 @@ class _RichMessageInputState extends State<RichMessageInput> {
           SnackBar(
             content: Text('${type.name.toUpperCase()} sent successfully'),
             backgroundColor: AppTheme.successGreen,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -289,56 +410,13 @@ class _RichMessageInputState extends State<RichMessageInput> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isUploading = false);
+        setState(() {
+          _isUploading = false;
+          _uploadProgress = 0.0;
+          _uploadStatus = '';
+        });
       }
     }
-  }
-
-  void _showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.grey900,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.image, color: AppTheme.infoBlue),
-                title: const Text('Photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.gif, color: AppTheme.successGreen),
-                title: const Text('GIF'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickGif();
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.attach_file,
-                  color: AppTheme.primaryPurple,
-                ),
-                title: const Text('File'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickFile();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   void _onEmojiSelected(Emoji emoji) {
@@ -367,98 +445,276 @@ class _RichMessageInputState extends State<RichMessageInput> {
             ),
           ),
 
-        // Message input
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        // Upload progress indicator
+        if (_isUploading)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: AppTheme.grey900,
-            border: Border(top: BorderSide(color: AppTheme.grey700)),
-          ),
-          child: _isUploading
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(width: 16),
-                        Text('Uploading...'),
-                      ],
-                    ),
-                  ),
-                )
-              : Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    // Attachment button
-                    IconButton(
-                      onPressed: _showAttachmentOptions,
-                      icon: const Icon(Icons.add_circle_outline),
-                      color: AppTheme.grey400,
-                    ),
-
-                    // Emoji button
-                    IconButton(
-                      onPressed: () {
-                        setState(() => _showEmojiPicker = !_showEmojiPicker);
-                      },
-                      icon: Icon(
-                        _showEmojiPicker
-                            ? Icons.keyboard
-                            : Icons.emoji_emotions_outlined,
-                      ),
-                      color: _showEmojiPicker
-                          ? AppTheme.primaryPurple
-                          : AppTheme.grey400,
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Text input
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: InputDecoration(
-                          hintText: 'Type a message...',
-                          hintStyle: TextStyle(color: AppTheme.grey400),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: AppTheme.grey800,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppTheme.primaryPurple,
                         ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendTextMessage(),
-                        onTap: () {
-                          if (_showEmojiPicker) {
-                            setState(() => _showEmojiPicker = false);
-                          }
-                        },
                       ),
                     ),
-
-                    const SizedBox(width: 8),
-
-                    // Send button
-                    IconButton(
-                      onPressed: _sendTextMessage,
-                      icon: const Icon(Icons.send),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppTheme.primaryPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(12),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _uploadStatus,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            '${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              color: AppTheme.grey400,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: _uploadProgress,
+                    backgroundColor: AppTheme.grey800,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppTheme.primaryPurple,
+                    ),
+                    minHeight: 3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Message input bar - Modern WhatsApp style
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppTheme.grey900,
+            border: Border(top: BorderSide(color: AppTheme.grey700)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Voice note button
+                Tooltip(
+                  message: 'Voice note',
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      onPressed: _recordVoiceNote,
+                      icon: const Icon(Icons.mic),
+                      color: AppTheme.errorRed,
+                      iconSize: 22,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+
+                // Attachment button (now includes photos)
+                Tooltip(
+                  message: 'Attach photo, file, or GIF',
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      onPressed: _showAttachmentMenu,
+                      icon: const Icon(Icons.attach_file),
+                      color: AppTheme.infoBlue,
+                      iconSize: 22,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+
+                // Message input field
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.grey800,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        // Emoji button
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: IconButton(
+                            onPressed: () {
+                              setState(
+                                () => _showEmojiPicker = !_showEmojiPicker,
+                              );
+                            },
+                            icon: Icon(
+                              _showEmojiPicker
+                                  ? Icons.keyboard
+                                  : Icons.emoji_emotions_outlined,
+                            ),
+                            color: _showEmojiPicker
+                                ? AppTheme.primaryPurple
+                                : AppTheme.grey400,
+                            iconSize: 20,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+
+                        // Text input
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            decoration: InputDecoration(
+                              hintText: 'Message...',
+                              hintStyle: TextStyle(color: AppTheme.grey400),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 10,
+                              ),
+                            ),
+                            maxLines: null,
+                            minLines: 1,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendTextMessage(),
+                            onTap: () {
+                              if (_showEmojiPicker) {
+                                setState(() => _showEmojiPicker = false);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Send button
+                Tooltip(
+                  message: 'Send message',
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: IconButton(
+                      onPressed: _sendTextMessage,
+                      icon: const Icon(Icons.send),
+                      color: AppTheme.primaryPurple,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  void _showAttachmentMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.grey900,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle indicator
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.grey600,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.image,
+                    color: AppTheme.primaryPurple,
+                  ),
+                  title: const Text('Photo'),
+                  subtitle: const Text('Pick from gallery'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.gif_box,
+                    color: AppTheme.successGreen,
+                  ),
+                  title: const Text('GIF'),
+                  subtitle: const Text('Search GIF library'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickGif();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.attach_file,
+                    color: AppTheme.infoBlue,
+                  ),
+                  title: const Text('Document'),
+                  subtitle: const Text('PDF, Word, Excel, etc.'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickFile();
+                  },
+                ),
+                const Divider(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    '💡 Quick Tip: Click the voice button next to the menu for instant voice notes',
+                    style: TextStyle(
+                      color: AppTheme.grey400,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

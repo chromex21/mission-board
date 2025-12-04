@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import '../services/firebase/fcm_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FCMService _fcmService = FCMService();
+
   User? user;
   AppUser? appUser;
   bool isLoading = false;
@@ -30,6 +33,9 @@ class AuthProvider extends ChangeNotifier {
             await _db.collection('users').doc(u.uid).set(newUser.toMap());
             appUser = newUser;
           }
+
+          // Initialize FCM for this user
+          await _fcmService.initialize(u.uid);
         } catch (e) {
           // Create a default appUser to allow app to continue
           appUser = AppUser(
@@ -205,6 +211,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    // Remove FCM token before signing out
+    if (user != null) {
+      await _fcmService.removeToken(user!.uid);
+    }
     await _auth.signOut();
   }
 

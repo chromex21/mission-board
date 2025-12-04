@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 
 import 'package:provider/provider.dart';
@@ -13,10 +14,13 @@ import 'providers/activity_provider.dart';
 import 'providers/lobby_provider.dart';
 import 'providers/messaging_provider.dart';
 import 'providers/friends_provider.dart';
+import 'providers/presence_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/block_report_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/sound_service.dart';
 import 'services/update_service.dart';
+import 'services/firebase/fcm_service.dart';
 import 'routes/app_routes.dart';
 import 'views/auth/login_screen.dart';
 import 'views/common/home_screen.dart';
@@ -25,6 +29,10 @@ import 'core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set up FCM background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   runApp(const MyApp());
 }
 
@@ -55,7 +63,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LobbyProvider()),
         ChangeNotifierProvider(create: (_) => MessagingProvider()),
         ChangeNotifierProvider(create: (_) => FriendsProvider()),
+        ChangeNotifierProvider(create: (_) => PresenceProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => BlockReportProvider()),
         ChangeNotifierProvider(create: (_) => SoundService()),
       ],
       child: Consumer2<AuthProvider, ThemeProvider>(

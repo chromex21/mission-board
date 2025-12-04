@@ -19,6 +19,15 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -37,271 +46,378 @@ class _MessagesScreenState extends State<MessagesScreen> {
       onNavigate: widget.onNavigate ?? (route) {},
       child: ResponsiveContent(
         maxWidth: AppSizing.maxContentWidth(context),
-        child: StreamBuilder<List<Conversation>>(
-          stream: messagingProvider.streamConversations(currentUser.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              final errorMsg = snapshot.error.toString();
-              final isIndexError =
-                  errorMsg.contains('index') ||
-                  errorMsg.contains('FAILED_PRECONDITION');
-
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isIndexError
-                            ? Icons.hourglass_empty
-                            : Icons.error_outline,
-                        size: 64,
-                        color: isIndexError
-                            ? AppTheme.warningOrange
-                            : Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        isIndexError
-                            ? 'Setting up messages...'
-                            : 'Error loading messages',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isIndexError
-                              ? AppTheme.warningOrange
-                              : Colors.red,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        isIndexError
-                            ? 'The database is building an index for messages.\nThis usually takes 2-5 minutes.\nPlease check back shortly!'
-                            : errorMsg,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (isIndexError) ...[
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
+        child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search conversations...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
                           onPressed: () {
-                            setState(() {}); // Trigger rebuild to retry
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
                           },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ],
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
                 ),
-              );
-            }
+              ),
+            ),
+            // Conversations list
+            Expanded(
+              child: StreamBuilder<List<Conversation>>(
+                stream: messagingProvider.streamConversations(currentUser.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            final conversations = snapshot.data ?? [];
+                  if (snapshot.hasError) {
+                    final errorMsg = snapshot.error.toString();
+                    final isIndexError =
+                        errorMsg.contains('index') ||
+                        errorMsg.contains('FAILED_PRECONDITION');
 
-            if (conversations.isEmpty) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryPurple.withValues(alpha: 0.2),
-                            AppTheme.infoBlue.withValues(alpha: 0.2),
-                          ],
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.chat_bubble_outline,
-                        size: 64,
-                        color: AppTheme.primaryPurple,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'No Messages Yet',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Your direct messages will appear here',
-                      style: TextStyle(fontSize: 16, color: AppTheme.grey400),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppTheme.grey900,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.grey700),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 20,
-                                color: AppTheme.infoBlue,
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isIndexError
+                                  ? Icons.hourglass_empty
+                                  : Icons.error_outline,
+                              size: 64,
+                              color: isIndexError
+                                  ? AppTheme.warningOrange
+                                  : Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              isIndexError
+                                  ? 'Setting up messages...'
+                                  : 'Error loading messages',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: isIndexError
+                                    ? AppTheme.warningOrange
+                                    : Colors.red,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'How to start a conversation',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.infoBlue,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              isIndexError
+                                  ? 'The database is building an index for messages.\nThis usually takes 2-5 minutes.\nPlease check back shortly!'
+                                  : errorMsg,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (isIndexError) ...[
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() {}); // Trigger rebuild to retry
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
                                 ),
                               ),
                             ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final allConversations = snapshot.data ?? [];
+
+                  // Filter conversations based on search query
+                  final conversations = _searchQuery.isEmpty
+                      ? allConversations
+                      : allConversations.where((conversation) {
+                          final otherParticipantId = conversation.participants
+                              .firstWhere(
+                                (id) => id != currentUser.uid,
+                                orElse: () => '',
+                              );
+                          if (otherParticipantId.isEmpty) return false;
+
+                          final otherParticipant =
+                              conversation
+                                      .participantDetails[otherParticipantId]
+                                  as Map<String, dynamic>?;
+                          final name = (otherParticipant?['name'] ?? '')
+                              .toString()
+                              .toLowerCase();
+                          final lastMessage = (conversation.lastMessage ?? '')
+                              .toLowerCase();
+
+                          return name.contains(_searchQuery) ||
+                              lastMessage.contains(_searchQuery);
+                        }).toList();
+
+                  if (conversations.isEmpty && _searchQuery.isEmpty) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryPurple.withValues(alpha: 0.2),
+                                  AppTheme.infoBlue.withValues(alpha: 0.2),
+                                ],
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.chat_bubble_outline,
+                              size: 64,
+                              color: AppTheme.primaryPurple,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No Messages Yet',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                           const SizedBox(height: 12),
-                          _buildTipItem('1', 'Go to Leaderboard or Teams'),
-                          _buildTipItem('2', 'Click on a user\'s profile'),
-                          _buildTipItem('3', 'Click "Send Message"'),
-                          const SizedBox(height: 12),
                           Text(
-                            'Chat privately with teammates about missions!',
+                            'Your direct messages will appear here',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 16,
                               color: AppTheme.grey400,
-                              fontStyle: FontStyle.italic,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppTheme.grey900,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.grey700),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 20,
+                                      color: AppTheme.infoBlue,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'How to start a conversation',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.infoBlue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                _buildTipItem(
+                                  '1',
+                                  'Go to Leaderboard or Teams',
+                                ),
+                                _buildTipItem(
+                                  '2',
+                                  'Click on a user\'s profile',
+                                ),
+                                _buildTipItem('3', 'Click "Send Message"'),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Chat privately with teammates about missions!',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.grey400,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Show "no results" message if search returns nothing
+                  if (conversations.isEmpty && _searchQuery.isNotEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: AppTheme.grey600,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No conversations found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: AppTheme.grey400,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try a different search term',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.grey600,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              );
-            }
+                    );
+                  }
 
-            return ListView.separated(
-              padding: AppPadding.page(context),
-              itemCount: conversations.length,
-              separatorBuilder: (context, index) =>
-                  Divider(height: 1, color: AppTheme.grey700),
-              itemBuilder: (context, index) {
-                final conversation = conversations[index];
-                final otherParticipantId = conversation.participants.firstWhere(
-                  (id) => id != currentUser.uid,
-                );
-                final otherParticipant =
-                    conversation.participantDetails[otherParticipantId]
-                        as Map<String, dynamic>?;
-                final unreadCount =
-                    conversation.unreadCount[currentUser.uid] ?? 0;
+                  return ListView.separated(
+                    padding: AppPadding.page(context),
+                    itemCount: conversations.length,
+                    separatorBuilder: (context, index) =>
+                        Divider(height: 1, color: AppTheme.grey700),
+                    itemBuilder: (context, index) {
+                      final conversation = conversations[index];
+                      final otherParticipantId = conversation.participants
+                          .firstWhere((id) => id != currentUser.uid);
+                      final otherParticipant =
+                          conversation.participantDetails[otherParticipantId]
+                              as Map<String, dynamic>?;
+                      final unreadCount =
+                          conversation.unreadCount[currentUser.uid] ?? 0;
 
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryPurple.withValues(
-                      alpha: 0.2,
-                    ),
-                    child: Text(
-                      (otherParticipant?['name'] ?? '?')[0].toUpperCase(),
-                      style: TextStyle(
-                        color: AppTheme.primaryPurple,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          otherParticipant?['name'] ?? 'Unknown User',
-                          style: TextStyle(
-                            fontWeight: unreadCount > 0
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                      if (unreadCount > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryPurple,
-                            borderRadius: BorderRadius.circular(12),
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppTheme.primaryPurple.withValues(
+                            alpha: 0.2,
                           ),
                           child: Text(
-                            unreadCount.toString(),
-                            style: const TextStyle(
-                              fontSize: 12,
+                            (otherParticipant?['name'] ?? '?')[0].toUpperCase(),
+                            style: TextStyle(
+                              color: AppTheme.primaryPurple,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    conversation.lastMessage ?? 'No messages yet',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: unreadCount > 0
-                          ? AppTheme.grey200
-                          : AppTheme.grey400,
-                    ),
-                  ),
-                  trailing: conversation.lastMessageTime != null
-                      ? Text(
-                          _formatTime(conversation.lastMessageTime!),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.grey400,
-                          ),
-                        )
-                      : null,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MessageThreadScreen(
-                          conversationId: conversation.id,
-                          otherUserName:
-                              otherParticipant?['name'] ?? 'Unknown User',
-                          otherUserId: otherParticipant?['id'] ?? '',
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                otherParticipant?['name'] ?? 'Unknown User',
+                                style: TextStyle(
+                                  fontWeight: unreadCount > 0
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            if (unreadCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryPurple,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  unreadCount.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                    );
-                  },
-                  tileColor: AppTheme.grey900,
-                  hoverColor: AppTheme.grey800,
-                );
-              },
-            );
-          },
+                        subtitle: Text(
+                          conversation.lastMessage ?? 'No messages yet',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: unreadCount > 0
+                                ? AppTheme.grey200
+                                : AppTheme.grey400,
+                          ),
+                        ),
+                        trailing: conversation.lastMessageTime != null
+                            ? Text(
+                                _formatTime(conversation.lastMessageTime!),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.grey400,
+                                ),
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MessageThreadScreen(
+                                conversationId: conversation.id,
+                                otherUserName:
+                                    otherParticipant?['name'] ?? 'Unknown User',
+                                otherUserId: otherParticipant?['id'] ?? '',
+                              ),
+                            ),
+                          );
+                        },
+                        tileColor: AppTheme.grey900,
+                        hoverColor: AppTheme.grey800,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

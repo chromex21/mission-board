@@ -72,6 +72,16 @@ class Message {
   final DateTime timestamp;
   final bool isRead;
   final List<String> readBy; // User IDs who read this message
+  final MessageStatus status; // Delivery status
+  final DateTime? deliveredAt;
+  final DateTime? readAt;
+  final List<MessageReaction> reactions; // Emoji reactions
+  final MessageReply? replyTo; // Reply reference
+  final String? attachmentUrl; // For file/image messages
+  final Map<String, dynamic>?
+  metadata; // Extra data (file size, dimensions, etc.)
+  final bool isEdited; // Whether message was edited
+  final DateTime? editedAt; // When message was last edited
 
   Message({
     required this.id,
@@ -83,6 +93,15 @@ class Message {
     required this.timestamp,
     this.isRead = false,
     this.readBy = const [],
+    this.status = MessageStatus.sent,
+    this.deliveredAt,
+    this.readAt,
+    this.reactions = const [],
+    this.replyTo,
+    this.attachmentUrl,
+    this.metadata,
+    this.isEdited = false,
+    this.editedAt,
   });
 
   factory Message.fromMap(Map<String, dynamic> map, String id) {
@@ -101,6 +120,20 @@ class Message {
       timestamp = DateTime.now();
     }
 
+    // Parse reactions
+    List<MessageReaction> reactions = [];
+    if (map['reactions'] != null) {
+      reactions = (map['reactions'] as List)
+          .map((r) => MessageReaction.fromMap(r as Map<String, dynamic>))
+          .toList();
+    }
+
+    // Parse reply
+    MessageReply? replyTo;
+    if (map['replyTo'] != null) {
+      replyTo = MessageReply.fromMap(map['replyTo'] as Map<String, dynamic>);
+    }
+
     return Message(
       id: id,
       conversationId: map['conversationId'] ?? '',
@@ -114,6 +147,26 @@ class Message {
       timestamp: timestamp,
       isRead: map['isRead'] ?? false,
       readBy: List<String>.from(map['readBy'] ?? []),
+      status: MessageStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => MessageStatus.sent,
+      ),
+      deliveredAt: map['deliveredAt'] != null
+          ? (map['deliveredAt'] as Timestamp).toDate()
+          : null,
+      readAt: map['readAt'] != null
+          ? (map['readAt'] as Timestamp).toDate()
+          : null,
+      reactions: reactions,
+      replyTo: replyTo,
+      attachmentUrl: map['attachmentUrl'],
+      metadata: map['metadata'] != null
+          ? Map<String, dynamic>.from(map['metadata'])
+          : null,
+      isEdited: map['isEdited'] ?? false,
+      editedAt: map['editedAt'] != null
+          ? (map['editedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -127,11 +180,99 @@ class Message {
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'readBy': readBy,
+      'status': status.name,
+      if (deliveredAt != null) 'deliveredAt': Timestamp.fromDate(deliveredAt!),
+      if (readAt != null) 'readAt': Timestamp.fromDate(readAt!),
+      'reactions': reactions.map((r) => r.toMap()).toList(),
+      if (replyTo != null) 'replyTo': replyTo!.toMap(),
+      if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
+      if (metadata != null) 'metadata': metadata,
+      'isEdited': isEdited,
+      if (editedAt != null) 'editedAt': Timestamp.fromDate(editedAt!),
     };
   }
 }
 
-enum MessageType { text, image, gif, file, system }
+enum MessageType { text, image, gif, file, voice, system }
+
+enum MessageStatus {
+  sending, // Local only, not yet sent
+  sent, // Delivered to server
+  delivered, // Delivered to recipient device
+  read, // Read by recipient
+  failed, // Failed to send
+}
+
+/// Message reaction
+class MessageReaction {
+  final String emoji;
+  final String userId;
+  final DateTime timestamp;
+
+  MessageReaction({
+    required this.emoji,
+    required this.userId,
+    required this.timestamp,
+  });
+
+  factory MessageReaction.fromMap(Map<String, dynamic> map) {
+    return MessageReaction(
+      emoji: map['emoji'] ?? '',
+      userId: map['userId'] ?? '',
+      timestamp: map['timestamp'] != null
+          ? (map['timestamp'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'emoji': emoji,
+      'userId': userId,
+      'timestamp': Timestamp.fromDate(timestamp),
+    };
+  }
+}
+
+/// Reply reference
+class MessageReply {
+  final String messageId;
+  final String senderId;
+  final String senderName;
+  final String content;
+  final MessageType type;
+
+  MessageReply({
+    required this.messageId,
+    required this.senderId,
+    required this.senderName,
+    required this.content,
+    required this.type,
+  });
+
+  factory MessageReply.fromMap(Map<String, dynamic> map) {
+    return MessageReply(
+      messageId: map['messageId'] ?? '',
+      senderId: map['senderId'] ?? '',
+      senderName: map['senderName'] ?? '',
+      content: map['content'] ?? '',
+      type: MessageType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => MessageType.text,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'messageId': messageId,
+      'senderId': senderId,
+      'senderName': senderName,
+      'content': content,
+      'type': type.name,
+    };
+  }
+}
 
 // For image/gif messages, content will be the URL
 // For text with mentions, content includes @username patterns

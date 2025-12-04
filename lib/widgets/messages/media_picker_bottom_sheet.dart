@@ -451,7 +451,6 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
         return InkWell(
           onTap: () {
             widget.onMediaSelected(fullUrl, MediaType.gif);
-            Navigator.pop(context);
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),

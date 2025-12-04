@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
+import '../../providers/presence_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/conversation_model.dart';
+import '../../models/presence_model.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/messages/rich_message_input.dart';
+import '../../widgets/messages/message_reactions.dart';
 
 class MessageThreadScreen extends StatefulWidget {
   final String conversationId;
@@ -28,11 +31,34 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final ScrollController _scrollController = ScrollController();
   final Set<String> _selectedMessageIds = {};
   bool _isSelectionMode = false;
+  bool _showScrollButton = false;
+  Message? _replyingTo;
+  final TextEditingController _editController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _markMessagesAsRead();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    if (_scrollController.hasClients) {
+      final showButton = _scrollController.offset > 200;
+      if (showButton != _showScrollButton) {
+        setState(() => _showScrollButton = showButton);
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _markMessagesAsRead() {
@@ -84,12 +110,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                   color: isDark ? Colors.white : AppTheme.lightText,
                 ),
               )
-            : Text(
-                widget.otherUserName,
-                style: TextStyle(
-                  color: isDark ? Colors.white : AppTheme.lightText,
-                ),
-              ),
+            : _buildAppBarTitle(isDark),
         actions: _isSelectionMode
             ? [
                 IconButton(
@@ -107,72 +128,156 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               ]
             : null,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<List<Message>>(
-              stream: messagingProvider.streamMessages(widget.conversationId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<List<Message>>(
+                  stream: messagingProvider.streamMessages(
+                    widget.conversationId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading messages...',
+                              style: TextStyle(color: AppTheme.grey400),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: AppTheme.errorRed,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error Loading Messages',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.grey400,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Could not load conversation',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.grey600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final messages = snapshot.data ?? [];
+                    return Stack(
                       children: [
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading messages...',
-                          style: TextStyle(color: AppTheme.grey400),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: AppTheme.errorRed,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error Loading Messages',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.grey400,
+                        _buildMessagesBody(messages, currentUser.uid),
+                        if (_showScrollButton)
+                          Positioned(
+                            right: 16,
+                            bottom: 16,
+                            child: FloatingActionButton.small(
+                              onPressed: _scrollToBottom,
+                              backgroundColor: AppTheme.primaryPurple,
+                              child: const Icon(Icons.arrow_downward, size: 20),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Could not load conversation',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.grey600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
                       ],
+                    );
+                  },
+                ),
+              ),
+
+              // Reply preview
+              if (_replyingTo != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkGrey : AppTheme.grey200,
+                    border: Border(
+                      top: BorderSide(color: AppTheme.primaryPurple, width: 2),
                     ),
-                  );
-                }
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.reply,
+                                  size: 16,
+                                  color: AppTheme.primaryPurple,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Replying to ${_replyingTo!.senderId == currentUser.uid ? 'yourself' : widget.otherUserName}',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryPurple,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _replyingTo!.content,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white70
+                                    : AppTheme.grey600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => setState(() => _replyingTo = null),
+                        color: AppTheme.grey400,
+                      ),
+                    ],
+                  ),
+                ),
 
-                final messages = snapshot.data ?? [];
-                return _buildMessagesBody(messages, currentUser.uid);
-              },
-            ),
+              RichMessageInput(
+                conversationId: widget.conversationId,
+                recipientId: widget.otherUserId,
+              ),
+            ],
           ),
-
-          RichMessageInput(
-            conversationId: widget.conversationId,
-            recipientId: widget.otherUserId,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -194,20 +299,98 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       itemBuilder: (context, index) {
         final message = messages[index];
         final isMe = message.senderId == currentUserId;
-        return _buildMessageBubble(message, isMe);
+
+        // Check if we need a date separator
+        final showDateSeparator =
+            index == messages.length - 1 ||
+            !_isSameDay(message.timestamp, messages[index + 1].timestamp);
+
+        return Column(
+          children: [
+            if (showDateSeparator) _buildDateSeparator(message.timestamp),
+            _buildMessageBubble(message, isMe, currentUserId),
+          ],
+        );
       },
     );
   }
 
-  Widget _buildMessageBubble(Message message, bool isMe) {
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  Widget _buildDateSeparator(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(date.year, date.month, date.day);
+
+    String label;
+    if (messageDate == today) {
+      label = 'Today';
+    } else if (messageDate == yesterday) {
+      label = 'Yesterday';
+    } else {
+      label = DateFormat('MMM d, y').format(date);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: AppTheme.grey700, thickness: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppTheme.grey400,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: AppTheme.grey700, thickness: 1)),
+        ],
+      ),
+    );
+  }
+
+  /// Extracts the URL from message content, handling caption format
+  String _extractUrl(String content) {
+    // Handle caption format: "url|caption:text"
+    if (content.contains('|caption:')) {
+      return content.split('|caption:').first;
+    }
+    return content;
+  }
+
+  /// Extracts the caption from message content if present
+  String? _extractCaption(String content) {
+    if (content.contains('|caption:')) {
+      final parts = content.split('|caption:');
+      if (parts.length > 1) {
+        return parts[1];
+      }
+    }
+    return null;
+  }
+
+  Widget _buildMessageBubble(Message message, bool isMe, String currentUserId) {
     final isSelected = _selectedMessageIds.contains(message.id);
+    final isRead = message.readBy.contains(widget.otherUserId);
+    final isDelivered =
+        message.status == MessageStatus.delivered ||
+        message.status == MessageStatus.read;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
         onLongPress: () {
           if (!_isSelectionMode) {
-            _enterSelectionMode(message.id);
+            _showMessageOptions(context, message, isMe);
           } else {
             _toggleMessageSelection(message.id);
           }
@@ -221,12 +404,14 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           children: [
             Container(
               margin: const EdgeInsets.only(bottom: 8),
-              padding: message.type == MessageType.image ||
-                      message.type == MessageType.gif
+              padding:
+                  (message.type == MessageType.image ||
+                      message.type == MessageType.gif)
                   ? const EdgeInsets.all(4)
                   : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                minWidth: 80,
               ),
               decoration: BoxDecoration(
                 color: isSelected
@@ -241,80 +426,145 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                     : null,
               ),
               child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isMe && message.type == MessageType.text)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    message.senderName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryPurple,
-                    ),
-                  ),
-                ),
-
-              if (message.type == MessageType.text)
-                Text(message.content, style: const TextStyle(fontSize: 14))
-              else if (message.type == MessageType.image ||
-                  message.type == MessageType.gif)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    message.content,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 200,
-                        color: AppTheme.grey700,
-                        child: const Center(
-                          child: Icon(Icons.broken_image, color: Colors.grey),
-                        ),
-                      );
-                    },
-                  ),
-                )
-              else if (message.type == MessageType.file)
-                Row(
-                  children: [
-                    const Icon(Icons.insert_drive_file, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isMe && message.type == MessageType.text)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        'File attachment',
-                        style: const TextStyle(fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
+                        message.senderName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryPurple,
+                        ),
                       ),
                     ),
+                  if (message.type == MessageType.text)
+                    Text(message.content, style: const TextStyle(fontSize: 14)),
+                  if (message.type == MessageType.image ||
+                      message.type == MessageType.gif)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _extractUrl(message.content),
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return SizedBox(
+                                height: 200,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value:
+                                        loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 200,
+                                color: AppTheme.grey700,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        if (_extractCaption(message.content) != null) ...[
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              _extractCaption(message.content)!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isMe ? Colors.white70 : AppTheme.grey400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  if (message.type == MessageType.file)
+                    Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'File attachment',
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (message.type == MessageType.voice)
+                    Row(
+                      children: [
+                        const Icon(Icons.mic, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Voice message',
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat.jm().format(message.timestamp),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isMe ? Colors.white70 : AppTheme.grey400,
+                        ),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          isRead ? Icons.done_all : Icons.done,
+                          size: 14,
+                          color: isRead
+                              ? AppTheme.infoBlue
+                              : (isDelivered
+                                    ? Colors.white70
+                                    : AppTheme.grey400),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (message.reactions.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    MessageReactionWidget(
+                      reactions: message.reactions,
+                      currentUserId: currentUserId,
+                      onReactionTap: (emoji) => _addReaction(message, emoji),
+                      onAddReaction: () =>
+                          _showReactionPicker(context, message),
+                    ),
                   ],
-                ),
-
-              const SizedBox(height: 4),
-              Text(
-                DateFormat.jm().format(message.timestamp),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isMe ? Colors.white70 : AppTheme.grey400,
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
             if (isSelected)
               Positioned(
                 top: 4,
@@ -325,11 +575,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                     color: AppTheme.infoBlue,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 16,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.check, size: 16, color: Colors.white),
                 ),
               ),
           ],
@@ -338,11 +584,168 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     );
   }
 
-  void _enterSelectionMode(String messageId) {
-    setState(() {
-      _isSelectionMode = true;
-      _selectedMessageIds.add(messageId);
-    });
+  void _showMessageOptions(BuildContext context, Message message, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.reply),
+              title: const Text('Reply'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _replyingTo = message);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_reaction_outlined),
+              title: const Text('React'),
+              onTap: () {
+                Navigator.pop(context);
+                _showReactionPicker(context, message);
+              },
+            ),
+            if (isMe) ...[
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _editController.text = message.content;
+                  });
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(message);
+                },
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.forward),
+              title: const Text('Forward'),
+              onTap: () {
+                Navigator.pop(context);
+                _forwardMessage(message);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReactionPicker(BuildContext context, Message message) {
+    final emojis = [
+      '👍',
+      '❤️',
+      '😂',
+      '😮',
+      '😢',
+      '😡',
+      '🎉',
+      '🔥',
+      '👏',
+      '🙏',
+      '💯',
+      '✨',
+      '💪',
+      '🚀',
+      '✅',
+      '❌',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'React to message',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: emojis
+                    .map(
+                      (emoji) => GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          _addReaction(message, emoji);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkGrey,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addReaction(Message message, String emoji) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.appUser == null) return;
+
+    try {
+      await Provider.of<MessagingProvider>(context, listen: false).addReaction(
+        conversationId: widget.conversationId,
+        messageId: message.id,
+        emoji: emoji,
+        userId: authProvider.appUser!.uid,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add reaction: $e')));
+      }
+    }
+  }
+
+  void _deleteMessage(Message message) async {
+    try {
+      await Provider.of<MessagingProvider>(
+        context,
+        listen: false,
+      ).deleteMessage(widget.conversationId, message.id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete message: $e')));
+      }
+    }
+  }
+
+  void _forwardMessage(Message message) {
+    // TODO: Implement forward UI with contact selector
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Forward feature coming soon')),
+    );
   }
 
   void _toggleMessageSelection(String messageId) {
@@ -370,12 +773,11 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       context,
       listen: false,
     );
-    
+
     // Get all message IDs from the current stream
-    messagingProvider
-        .streamMessages(widget.conversationId)
-        .first
-        .then((messages) {
+    messagingProvider.streamMessages(widget.conversationId).first.then((
+      messages,
+    ) {
       setState(() {
         _selectedMessageIds.clear();
         _selectedMessageIds.addAll(messages.map((m) => m.id));
@@ -402,9 +804,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               Navigator.pop(context);
               _deleteSelectedMessages();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorRed,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete'),
           ),
         ],
@@ -424,10 +824,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     try {
       // Delete all selected messages
       for (final messageId in messageIds) {
-        await messagingProvider.deleteMessage(
-          widget.conversationId,
-          messageId,
-        );
+        await messagingProvider.deleteMessage(widget.conversationId, messageId);
       }
 
       if (mounted) {
@@ -455,9 +852,70 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
     }
   }
 
+  Widget _buildAppBarTitle(bool isDark) {
+    return Consumer<PresenceProvider>(
+      builder: (context, presenceProvider, _) {
+        final presence = presenceProvider.getPresence(widget.otherUserId);
+        final isOnline = presence?.status == PresenceStatus.online;
+        final typingUsers = presenceProvider.getTypingUsers(
+          widget.conversationId,
+        );
+        final isTyping = typingUsers.contains(widget.otherUserId);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  widget.otherUserName,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppTheme.lightText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (isOnline) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.successGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (isTyping)
+              Text(
+                'typing...',
+                style: TextStyle(
+                  color: AppTheme.primaryPurple,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else if (presence != null)
+              Text(
+                presence.getStatusText(),
+                style: TextStyle(
+                  color: isDark ? AppTheme.grey400 : AppTheme.grey600,
+                  fontSize: 11,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
+    _editController.dispose();
     super.dispose();
   }
 }

@@ -6,8 +6,16 @@ service cloud.firestore {
     match /users/{userId} {
       // Anyone authenticated can read user documents (needed for role checks)
       allow read: if request.auth != null;
-      // Users can only write their own document
-      allow write: if request.auth.uid == userId;
+      
+      // Users can write their own document
+      allow create, delete: if request.auth.uid == userId;
+      
+      // Users can update their own document OR other users can update friends list only
+      allow update: if request.auth.uid == userId ||
+        // Allow friend list updates from any authenticated user (for mutual friend requests)
+        (request.auth != null && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friends'])
+        );
     }
     
     // Helper functions
@@ -166,12 +174,23 @@ service cloud.firestore {
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
           request.resource.data.senderId == request.auth.uid;
         
-        // Users can update messages they sent (for read receipts)
+        // Users can update messages for read receipts, reactions, or edit their own
         allow update: if request.auth != null && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          (
+            // Read receipts - anyone in conversation can mark as read
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'isRead', 'readAt', 'deliveredAt', 'status']) ||
+            // Reactions - anyone can add reactions
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) ||
+            // Edit own message content (sender only)
+            (resource.data.senderId == request.auth.uid && 
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content', 'isEdited', 'editedAt']))
+          );
         
-        // No deleting individual messages (delete conversation instead)
-        allow delete: if false;
+        // Users can delete their own messages
+        allow delete: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          resource.data.senderId == request.auth.uid;
       }
     }
     
@@ -187,12 +206,48 @@ service cloud.firestore {
       allow create: if request.auth != null && 
         request.resource.data.senderId == request.auth.uid;
       
-      // Users can update requests if they're the receiver (for accepting/rejecting)
-      allow update: if request.auth != null && 
-        resource.data.receiverId == request.auth.uid;
+      // Sender can update to cancel, receiver can update to accept/reject
+      allow update: if request.auth != null && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
       
-      // No deleting friend requests
-      allow delete: if false;
+      // Sender can delete their own pending requests (cancel)
+      allow delete: if request.auth != null && 
+        resource.data.senderId == request.auth.uid &&
+        resource.data.status == 'pending';
+    }
+    
+    // Blocked Users collection
+    match /blockedUsers/{blockId} {
+      // Users can read blocks where they're the blocker
+      allow read: if request.auth != null && 
+        resource.data.blockerId == request.auth.uid;
+      
+      // Users can create blocks if they're the blocker
+      allow create: if request.auth != null && 
+        request.resource.data.blockerId == request.auth.uid;
+      
+      // Users can delete their own blocks (unblock)
+      allow delete: if request.auth != null && 
+        resource.data.blockerId == request.auth.uid;
+    }
+    
+    // Reports collection
+    match /reports/{reportId} {
+      // Only the reporter and admins can read reports
+      allow read: if request.auth != null && (
+        resource.data.reporterId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      
+      // Users can create reports
+      allow create: if request.auth != null && 
+        request.resource.data.reporterId == request.auth.uid;
+      
+      // Only admins can update reports (resolve them)
+      allow update: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // Notifications collection
@@ -249,6 +304,25 @@ service cloud.firestore {
       // Only admins can create/update release notes
       allow write: if request.auth != null && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // User presence
+    match /presence/{userId} {
+      // Anyone authenticated can read presence
+      allow read: if request.auth != null;
+      
+      // Users can only update their own presence
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Typing indicators (subcollection under conversations)
+    match /conversations/{conversationId}/typing/{userId} {
+      // Participants can read typing indicators
+      allow read: if request.auth != null && 
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      
+      // Users can only write their own typing indicator
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

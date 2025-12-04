@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import '../../core/theme/app_theme.dart';
@@ -19,33 +20,68 @@ class VoiceNoteRecorder extends StatefulWidget {
 }
 
 class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
-  final AudioRecorder _audioRecorder = AudioRecorder();
+  late AudioRecorder _audioRecorder;
   int _recordDuration = 0;
   Timer? _timer;
   String? _recordingPath;
+  bool _isRecording = false;
+  bool _isSupported = true;
+  String _errorMessage = '';
 
   static const int maxDuration = 60; // 60 seconds max
 
   @override
   void initState() {
     super.initState();
-    _startRecording();
+    _initRecorder();
+  }
+
+  Future<void> _initRecorder() async {
+    try {
+      _audioRecorder = AudioRecorder();
+      _startRecording();
+    } catch (e) {
+      setState(() {
+        _isSupported = false;
+        _errorMessage = 'Failed to initialize recorder: ${e.toString()}';
+      });
+      if (mounted) {
+        widget.onCancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _audioRecorder.dispose();
+    _stopRecording();
     super.dispose();
   }
 
   Future<void> _startRecording() async {
     try {
+      if (!_isSupported) {
+        return;
+      }
+
       if (await _audioRecorder.hasPermission()) {
-        // Get temporary directory for recording
-        final tempDir = Directory.systemTemp;
-        final filePath =
-            '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        String filePath;
+
+        if (kIsWeb) {
+          // Web: use a web-friendly path
+          filePath = 'voice_note_${DateTime.now().millisecondsSinceEpoch}.webm';
+        } else {
+          // Mobile/Desktop: use system temp directory
+          final tempDir = Directory.systemTemp;
+          filePath =
+              '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        }
 
         await _audioRecorder.start(
           const RecordConfig(
@@ -58,16 +94,19 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
 
         setState(() {
           _recordingPath = filePath;
+          _isRecording = true;
         });
 
         _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          setState(() {
-            _recordDuration++;
-          });
+          if (mounted) {
+            setState(() {
+              _recordDuration++;
+            });
 
-          // Auto-stop at max duration
-          if (_recordDuration >= maxDuration) {
-            _stopRecording();
+            // Auto-stop at max duration
+            if (_recordDuration >= maxDuration) {
+              _stopRecording();
+            }
           }
         });
       } else {
@@ -101,10 +140,12 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
 
       if (path != null && _recordDuration >= 1) {
         // Minimum 1 second recording
-        widget.onRecordComplete(path, _recordDuration);
-      } else {
-        widget.onCancel();
         if (mounted) {
+          widget.onRecordComplete(path, _recordDuration);
+        }
+      } else {
+        if (mounted) {
+          widget.onCancel();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Recording too short (min 1 second)'),
@@ -114,8 +155,8 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
         }
       }
     } catch (e) {
-      widget.onCancel();
       if (mounted) {
+        widget.onCancel();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error stopping recording: ${e.toString()}'),
@@ -142,7 +183,9 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
       }
     }
 
-    widget.onCancel();
+    if (mounted) {
+      widget.onCancel();
+    }
   }
 
   String _formatDuration(int seconds) {

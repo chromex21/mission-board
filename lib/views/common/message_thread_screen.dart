@@ -26,6 +26,8 @@ class MessageThreadScreen extends StatefulWidget {
 
 class _MessageThreadScreenState extends State<MessageThreadScreen> {
   final ScrollController _scrollController = ScrollController();
+  final Set<String> _selectedMessageIds = {};
+  bool _isSelectionMode = false;
 
   @override
   void initState() {
@@ -69,10 +71,41 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
         iconTheme: IconThemeData(
           color: isDark ? Colors.white : AppTheme.lightText,
         ),
-        title: Text(
-          widget.otherUserName,
-          style: TextStyle(color: isDark ? Colors.white : AppTheme.lightText),
-        ),
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _cancelSelection,
+              )
+            : null,
+        title: _isSelectionMode
+            ? Text(
+                '${_selectedMessageIds.length} selected',
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppTheme.lightText,
+                ),
+              )
+            : Text(
+                widget.otherUserName,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppTheme.lightText,
+                ),
+              ),
+        actions: _isSelectionMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  onPressed: () => _selectAllMessages(context),
+                  tooltip: 'Select All',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: AppTheme.errorRed),
+                  onPressed: _selectedMessageIds.isEmpty
+                      ? null
+                      : () => _confirmDeleteSelected(context),
+                  tooltip: 'Delete Selected',
+                ),
+              ]
+            : null,
       ),
       body: Column(
         children: [
@@ -167,163 +200,245 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   }
 
   Widget _buildMessageBubble(Message message, bool isMe) {
+    final isSelected = _selectedMessageIds.contains(message.id);
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: () => _showMessageOptions(message, isMe),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding:
-              message.type == MessageType.image || message.type == MessageType.gif
-              ? const EdgeInsets.all(4)
-              : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.7,
-          ),
-        decoration: BoxDecoration(
-          color: isMe ? AppTheme.primaryPurple : AppTheme.grey800,
-          borderRadius: BorderRadius.circular(16).copyWith(
-            bottomRight: isMe ? const Radius.circular(4) : null,
-            bottomLeft: !isMe ? const Radius.circular(4) : null,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        onLongPress: () {
+          if (!_isSelectionMode) {
+            _enterSelectionMode(message.id);
+          } else {
+            _toggleMessageSelection(message.id);
+          }
+        },
+        onTap: () {
+          if (_isSelectionMode) {
+            _toggleMessageSelection(message.id);
+          }
+        },
+        child: Stack(
           children: [
-            if (!isMe && message.type == MessageType.text)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  message.senderName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryPurple,
-                  ),
-                ),
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: message.type == MessageType.image ||
+                      message.type == MessageType.gif
+                  ? const EdgeInsets.all(4)
+                  : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
-
-            if (message.type == MessageType.text)
-              Text(message.content, style: const TextStyle(fontSize: 14))
-            else if (message.type == MessageType.image ||
-                message.type == MessageType.gif)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  message.content,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      color: AppTheme.grey700,
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    );
-                  },
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppTheme.infoBlue.withValues(alpha: 0.5)
+                    : (isMe ? AppTheme.primaryPurple : AppTheme.grey800),
+                borderRadius: BorderRadius.circular(16).copyWith(
+                  bottomRight: isMe ? const Radius.circular(4) : null,
+                  bottomLeft: !isMe ? const Radius.circular(4) : null,
                 ),
-              )
-            else if (message.type == MessageType.file)
-              Row(
-                children: [
-                  const Icon(Icons.insert_drive_file, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'File attachment',
-                      style: const TextStyle(fontSize: 14),
-                      overflow: TextOverflow.ellipsis,
+                border: isSelected
+                    ? Border.all(color: AppTheme.infoBlue, width: 2)
+                    : null,
+              ),
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isMe && message.type == MessageType.text)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    message.senderName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryPurple,
                     ),
                   ),
-                ],
-              ),
+                ),
 
-            const SizedBox(height: 4),
-            Text(
-              DateFormat.jm().format(message.timestamp),
-              style: TextStyle(
-                fontSize: 10,
-                color: isMe ? Colors.white70 : AppTheme.grey400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),);
-  }
+              if (message.type == MessageType.text)
+                Text(message.content, style: const TextStyle(fontSize: 14))
+              else if (message.type == MessageType.image ||
+                  message.type == MessageType.gif)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    message.content,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 200,
+                        color: AppTheme.grey700,
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
+                )
+              else if (message.type == MessageType.file)
+                Row(
+                  children: [
+                    const Icon(Icons.insert_drive_file, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'File attachment',
+                        style: const TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
 
-  void _showMessageOptions(Message message, bool isMe) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.grey900,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isMe)
-              ListTile(
-                leading: const Icon(Icons.delete, color: AppTheme.errorRed),
-                title: const Text('Delete Message'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteMessage(message);
-                },
+              const SizedBox(height: 4),
+              Text(
+                DateFormat.jm().format(message.timestamp),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isMe ? Colors.white70 : AppTheme.grey400,
+                ),
               ),
-            ListTile(
-              leading: const Icon(Icons.copy, color: AppTheme.infoBlue),
-              title: const Text('Copy Text'),
-              onTap: () {
-                Navigator.pop(context);
-                // Copy text functionality could be added here
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Text copied to clipboard')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.close, color: AppTheme.grey400),
-              title: const Text('Cancel'),
-              onTap: () => Navigator.pop(context),
-            ),
+            ],
+          ),
+            if (isSelected)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.infoBlue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _deleteMessage(Message message) async {
+  void _enterSelectionMode(String messageId) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedMessageIds.add(messageId);
+    });
+  }
+
+  void _toggleMessageSelection(String messageId) {
+    setState(() {
+      if (_selectedMessageIds.contains(messageId)) {
+        _selectedMessageIds.remove(messageId);
+        if (_selectedMessageIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedMessageIds.add(messageId);
+      }
+    });
+  }
+
+  void _cancelSelection() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedMessageIds.clear();
+    });
+  }
+
+  void _selectAllMessages(BuildContext context) {
+    final messagingProvider = Provider.of<MessagingProvider>(
+      context,
+      listen: false,
+    );
+    
+    // Get all message IDs from the current stream
+    messagingProvider
+        .streamMessages(widget.conversationId)
+        .first
+        .then((messages) {
+      setState(() {
+        _selectedMessageIds.clear();
+        _selectedMessageIds.addAll(messages.map((m) => m.id));
+      });
+    });
+  }
+
+  void _confirmDeleteSelected(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.grey900,
+        title: const Text('Delete Messages'),
+        content: Text(
+          'Are you sure you want to delete ${_selectedMessageIds.length} message(s)? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteSelectedMessages();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteSelectedMessages() async {
     final messagingProvider = Provider.of<MessagingProvider>(
       context,
       listen: false,
     );
 
+    final count = _selectedMessageIds.length;
+    final messageIds = List<String>.from(_selectedMessageIds);
+
     try {
-      await messagingProvider.deleteMessage(
-        widget.conversationId,
-        message.id,
-      );
+      // Delete all selected messages
+      for (final messageId in messageIds) {
+        await messagingProvider.deleteMessage(
+          widget.conversationId,
+          messageId,
+        );
+      }
 
       if (mounted) {
+        setState(() {
+          _isSelectionMode = false;
+          _selectedMessageIds.clear();
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Message deleted'),
+          SnackBar(
+            content: Text('$count message(s) deleted'),
             backgroundColor: AppTheme.successGreen,
           ),
         );
@@ -332,7 +447,7 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete message: $e'),
+            content: Text('Failed to delete messages: $e'),
             backgroundColor: Colors.red,
           ),
         );

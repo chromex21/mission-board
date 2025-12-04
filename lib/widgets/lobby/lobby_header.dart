@@ -51,9 +51,7 @@ class _LobbyHeaderState extends State<LobbyHeader>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.grey900,
-        border: Border(
-          bottom: BorderSide(color: AppTheme.grey800, width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: AppTheme.grey800, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,10 +80,7 @@ class _LobbyHeaderState extends State<LobbyHeader>
                     const SizedBox(height: 2),
                     Text(
                       'Topic: ${widget.lobby.topic}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.grey400,
-                      ),
+                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
                     ),
                   ],
                 ),
@@ -123,7 +118,9 @@ class _LobbyHeaderState extends State<LobbyHeader>
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.successGreen.withValues(alpha: 0.5),
+                                    color: AppTheme.successGreen.withValues(
+                                      alpha: 0.5,
+                                    ),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
@@ -177,19 +174,12 @@ class _LobbyHeaderState extends State<LobbyHeader>
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.push_pin,
-                    size: 16,
-                    color: AppTheme.infoBlue,
-                  ),
+                  Icon(Icons.push_pin, size: 16, color: AppTheme.infoBlue),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.lobby.pinnedMessage!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.grey200,
-                      ),
+                      style: TextStyle(fontSize: 13, color: AppTheme.grey200),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

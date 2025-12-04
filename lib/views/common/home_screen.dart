@@ -9,7 +9,7 @@ import '../team/teams_screen.dart';
 import '../admin/admin_panel_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
-import 'lobby_screen.dart';
+import 'new_lobby_screen.dart';
 import 'messages_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case '/leaderboard':
         return LeaderboardScreen(onNavigate: _handleNavigation);
       case '/lobby':
-        return LobbyScreen(onNavigate: _handleNavigation);
+        return NewLobbyScreen(onNavigate: _handleNavigation);
       case '/messages':
         return MessagesScreen(onNavigate: _handleNavigation);
       case '/admin':

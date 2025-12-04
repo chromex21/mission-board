@@ -33,11 +33,11 @@ class FlatMessageRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isOwnMessage 
+          color: isOwnMessage
               ? AppTheme.primaryPurple.withValues(alpha: 0.05)
               : Colors.transparent,
           border: Border(
-            left: isOwnMessage 
+            left: isOwnMessage
                 ? BorderSide(color: AppTheme.primaryPurple, width: 2)
                 : BorderSide.none,
           ),
@@ -57,8 +57,7 @@ class FlatMessageRow extends StatelessWidget {
             const SizedBox(width: 12),
 
             // User rank badge
-            if (message.userRank != null)
-              _buildRankBadge(message.userRank!),
+            if (message.userRank != null) _buildRankBadge(message.userRank!),
 
             // Username
             Text(
@@ -73,9 +72,7 @@ class FlatMessageRow extends StatelessWidget {
             const SizedBox(width: 8),
 
             // Message content
-            Expanded(
-              child: _buildMessageContent(),
-            ),
+            Expanded(child: _buildMessageContent()),
 
             // Reactions (compact)
             if (message.reactions != null && message.reactions!.isNotEmpty)
@@ -90,10 +87,7 @@ class FlatMessageRow extends StatelessWidget {
     final emoji = _getRankEmoji(rank);
     return Container(
       margin: const EdgeInsets.only(right: 4),
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 12),
-      ),
+      child: Text(emoji, style: const TextStyle(fontSize: 12)),
     );
   }
 
@@ -141,10 +135,7 @@ class FlatMessageRow extends StatelessWidget {
             Expanded(
               child: Text(
                 message.content,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 13, color: Colors.white),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -163,11 +154,7 @@ class FlatMessageRow extends StatelessWidget {
     final parts = message.content.split(' ');
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
-          fontSize: 13,
-          color: Colors.white,
-          height: 1.4,
-        ),
+        style: const TextStyle(fontSize: 13, color: Colors.white, height: 1.4),
         children: parts.map((part) {
           if (part.startsWith('@')) {
             return TextSpan(
@@ -187,8 +174,10 @@ class FlatMessageRow extends StatelessWidget {
   Widget _buildCompactReactions() {
     final reactions = message.reactions!;
     final firstReaction = reactions.entries.first;
-    final totalReactions = reactions.values
-        .fold<int>(0, (sum, users) => sum + users.length);
+    final totalReactions = reactions.values.fold<int>(
+      0,
+      (sum, users) => sum + users.length,
+    );
 
     return Container(
       margin: const EdgeInsets.only(left: 8),
@@ -201,10 +190,7 @@ class FlatMessageRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            firstReaction.key,
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text(firstReaction.key, style: const TextStyle(fontSize: 12)),
           if (totalReactions > 1) ...[
             const SizedBox(width: 2),
             Text(

@@ -130,11 +130,11 @@ class Lobby {
 
 /// User rank/status in lobby
 enum LobbyRank {
-  guest,    // First time visitor
-  member,   // Regular member
-  og,       // Original member (early joiner)
-  mod,      // Moderator
-  admin;    // Admin
+  guest, // First time visitor
+  member, // Regular member
+  og, // Original member (early joiner)
+  mod, // Moderator
+  admin; // Admin
 
   String get displayName {
     switch (this) {

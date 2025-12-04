@@ -501,3 +501,108 @@ exports.updateLeaderboard = functions.pubsub
       
       return null;
     });
+
+// ============================================================================
+// LOBBY INITIALIZATION (One-time setup)
+// ============================================================================
+
+/**
+ * Initialize default lobbies (HTTP function - call once)
+ * https://us-central1-mission-board-b8dbc.cloudfunctions.net/initializeLobbies
+ */
+exports.initializeLobbies = functions.https.onRequest(async (req, res) => {
+  try {
+    const lobbies = [
+      {
+        id: 'global',
+        name: 'Global Lobby',
+        topic: 'General Discussion',
+        description: 'Main community space for everyone',
+        iconEmoji: '🌍',
+        onlineCount: 0,
+        totalMembers: 0,
+        type: 'global',
+        isActive: true,
+      },
+      {
+        id: 'gaming',
+        name: 'Gaming Zone',
+        topic: 'Gaming & Esports',
+        description: 'Talk gaming, share clips, find teammates',
+        iconEmoji: '🎮',
+        onlineCount: 0,
+        totalMembers: 0,
+        type: 'topic',
+        isActive: true,
+      },
+      {
+        id: 'coding',
+        name: 'Code & Build',
+        topic: 'Programming & Development',
+        description: 'Developers, projects, tech discussions',
+        iconEmoji: '💻',
+        onlineCount: 0,
+        totalMembers: 0,
+        type: 'topic',
+        isActive: true,
+      },
+      {
+        id: 'hustle',
+        name: 'Hustle Hub',
+        topic: 'Business & Entrepreneurship',
+        description: 'Startups, side hustles, making money moves',
+        iconEmoji: '💸',
+        onlineCount: 0,
+        totalMembers: 0,
+        type: 'topic',
+        isActive: true,
+      },
+      {
+        id: 'random',
+        name: 'Random Chat',
+        topic: 'Anything Goes',
+        description: 'Chill, vibe, talk about whatever',
+        iconEmoji: '💬',
+        onlineCount: 0,
+        totalMembers: 0,
+        type: 'topic',
+        isActive: true,
+      },
+    ];
+
+    const batch = db.batch();
+    const results = [];
+
+    for (const lobby of lobbies) {
+      const { id, ...data } = lobby;
+      const ref = db.collection('lobbies').doc(id);
+      
+      // Check if lobby already exists
+      const existing = await ref.get();
+      if (existing.exists) {
+        results.push({ id, status: 'already_exists', name: data.name });
+        continue;
+      }
+
+      batch.set(ref, {
+        ...data,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      results.push({ id, status: 'created', name: data.name });
+    }
+
+    await batch.commit();
+
+    res.status(200).json({
+      success: true,
+      message: 'Lobbies initialized successfully',
+      results: results,
+    });
+  } catch (error) {
+    console.error('Error initializing lobbies:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});

@@ -23,7 +23,7 @@ class LobbyCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isJoined 
+          color: isJoined
               ? AppTheme.primaryPurple.withValues(alpha: 0.5)
               : AppTheme.grey800,
           width: isJoined ? 2 : 1,

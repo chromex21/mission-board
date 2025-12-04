@@ -10,7 +10,8 @@ class LobbyMessage {
   final String? missionId;
   final String? missionTitle;
   final DateTime createdAt;
-  final String messageType; // 'text', 'image', 'gif', 'sticker', 'voice', 'system'
+  final String
+  messageType; // 'text', 'image', 'gif', 'sticker', 'voice', 'system'
   final String? mediaUrl;
 
   // Voice note fields

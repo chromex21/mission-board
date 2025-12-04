@@ -14,13 +14,13 @@ class LobbyProvider extends ChangeNotifier {
   static const Duration _messageInterval = Duration(seconds: 2);
 
   List<LobbyMessage> get messages => _messages;
-  
+
   bool get canSendMessage {
     if (_lastMessageTime == null) return true;
     final diff = DateTime.now().difference(_lastMessageTime!);
     return diff >= _messageInterval;
   }
-  
+
   Duration? get timeUntilNextMessage {
     if (canSendMessage) return null;
     final diff = DateTime.now().difference(_lastMessageTime!);
@@ -249,18 +249,18 @@ class LobbyProvider extends ChangeNotifier {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) {
-            try {
-              return Lobby.fromFirestore(doc);
-            } catch (e) {
-              debugPrint('❌ Error parsing lobby ${doc.id}: $e');
-              return null;
-            }
-          })
-          .whereType<Lobby>()
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) {
+                try {
+                  return Lobby.fromFirestore(doc);
+                } catch (e) {
+                  debugPrint('❌ Error parsing lobby ${doc.id}: $e');
+                  return null;
+                }
+              })
+              .whereType<Lobby>()
+              .toList();
+        });
   }
 
   // Get lobby by ID
@@ -362,18 +362,18 @@ class LobbyProvider extends ChangeNotifier {
         .limit(200)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) {
-            try {
-              return LobbyMessage.fromFirestore(doc);
-            } catch (e) {
-              debugPrint('❌ Error parsing message ${doc.id}: $e');
-              return null;
-            }
-          })
-          .whereType<LobbyMessage>()
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) {
+                try {
+                  return LobbyMessage.fromFirestore(doc);
+                } catch (e) {
+                  debugPrint('❌ Error parsing message ${doc.id}: $e');
+                  return null;
+                }
+              })
+              .whereType<LobbyMessage>()
+              .toList();
+        });
   }
 
   // Stream online users in lobby
@@ -384,19 +384,19 @@ class LobbyProvider extends ChangeNotifier {
         .collection('users')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) {
-            try {
-              return LobbyUser.fromMap(doc.data());
-            } catch (e) {
-              debugPrint('❌ Error parsing lobby user ${doc.id}: $e');
-              return null;
-            }
-          })
-          .whereType<LobbyUser>()
-          .where((user) => user.isOnline)
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) {
+                try {
+                  return LobbyUser.fromMap(doc.data());
+                } catch (e) {
+                  debugPrint('❌ Error parsing lobby user ${doc.id}: $e');
+                  return null;
+                }
+              })
+              .whereType<LobbyUser>()
+              .where((user) => user.isOnline)
+              .toList();
+        });
   }
 
   // Send message with rate limiting
@@ -413,14 +413,15 @@ class LobbyProvider extends ChangeNotifier {
   }) async {
     // Check rate limit
     if (!canSendMessage) {
-      errorMessage = 'Please wait ${timeUntilNextMessage?.inSeconds}s before sending another message';
+      errorMessage =
+          'Please wait ${timeUntilNextMessage?.inSeconds}s before sending another message';
       notifyListeners();
       return null;
     }
 
     try {
       _lastMessageTime = DateTime.now();
-      
+
       final mentions = LobbyMessage.extractMentions(content);
 
       final message = LobbyMessage(
@@ -462,9 +463,7 @@ class LobbyProvider extends ChangeNotifier {
           .doc(lobbyId)
           .collection('users')
           .doc(userId)
-          .update({
-        'lastSeen': FieldValue.serverTimestamp(),
-      });
+          .update({'lastSeen': FieldValue.serverTimestamp()});
     } catch (e) {
       debugPrint('❌ Error updating presence: $e');
     }

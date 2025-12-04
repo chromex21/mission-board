@@ -234,7 +234,7 @@ class FlatMessageRow extends StatelessWidget {
         break;
       default:
         icon = Icons.info_outline;
-        iconColor = AppTheme.grey500;
+        iconColor = AppTheme.grey600;
     }
 
     return Container(

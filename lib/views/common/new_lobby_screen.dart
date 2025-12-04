@@ -9,7 +9,8 @@ import '../../core/theme/app_theme.dart';
 import '../../utils/responsive_helper.dart';
 import '../../widgets/lobby/lobby_header.dart';
 import '../../widgets/lobby/lobby_card.dart';
-import '../../widgets/lobby/flat_message_row.dart';
+import '../../widgets/lobby/enhanced_message_display.dart';
+import '../../widgets/lobby/enhanced_message_input.dart';
 import '../../widgets/layout/app_layout.dart';
 
 class NewLobbyScreen extends StatefulWidget {
@@ -34,9 +35,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
       title: _showDiscovery ? 'Lobby Discovery' : 'Lobby',
       onNavigate: widget.onNavigate ?? (route) {},
       onProfileTap: () => Navigator.pushNamed(context, '/profile'),
-      child: _showDiscovery
-          ? _buildDiscoveryView()
-          : _buildLobbyView(isMobile),
+      child: _showDiscovery ? _buildDiscoveryView() : _buildLobbyView(isMobile),
     );
   }
 
@@ -51,9 +50,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppTheme.grey900,
-              border: Border(
-                bottom: BorderSide(color: AppTheme.grey800),
-              ),
+              border: Border(bottom: BorderSide(color: AppTheme.grey800)),
             ),
             child: Row(
               children: [
@@ -112,18 +109,12 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'No lobbies available yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.grey400,
-                        ),
+                        style: TextStyle(fontSize: 16, color: AppTheme.grey400),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Check back soon!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.grey500,
-                        ),
+                        style: TextStyle(fontSize: 14, color: AppTheme.grey600),
                       ),
                     ],
                   ),
@@ -169,9 +160,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
           );
         }
 
-        return isMobile
-            ? _buildMobileLobby(lobby)
-            : _buildDesktopLobby(lobby);
+        return isMobile ? _buildMobileLobby(lobby) : _buildDesktopLobby(lobby);
       },
     );
   }
@@ -180,16 +169,10 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
     return Row(
       children: [
         // Messages area (70%)
-        Expanded(
-          flex: 7,
-          child: _buildMessagesArea(lobby),
-        ),
+        Expanded(flex: 7, child: _buildMessagesArea(lobby)),
 
         // Users sidebar (30%)
-        Expanded(
-          flex: 3,
-          child: _buildUsersSidebar(lobby),
-        ),
+        Expanded(flex: 3, child: _buildUsersSidebar(lobby)),
       ],
     );
   }
@@ -228,7 +211,9 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
           // Messages feed
           Expanded(
             child: StreamBuilder<List<LobbyMessage>>(
-              stream: lobbyProvider.streamLobbyMessagesForLobby(_currentLobbyId!),
+              stream: lobbyProvider.streamLobbyMessagesForLobby(
+                _currentLobbyId!,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -276,7 +261,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                     final isOwnMessage =
                         message.userId == authProvider.appUser?.uid;
 
-                    return FlatMessageRow(
+                    return EnhancedMessageDisplay(
                       message: message,
                       isOwnMessage: isOwnMessage,
                       onTap: () {
@@ -355,10 +340,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                   return Center(
                     child: Text(
                       'No users online',
-                      style: TextStyle(
-                        color: AppTheme.grey400,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: AppTheme.grey400, fontSize: 14),
                     ),
                   );
                 }
@@ -370,8 +352,9 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                     return ListTile(
                       dense: true,
                       leading: CircleAvatar(
-                        backgroundColor:
-                            AppTheme.primaryPurple.withValues(alpha: 0.2),
+                        backgroundColor: AppTheme.primaryPurple.withValues(
+                          alpha: 0.2,
+                        ),
                         child: Text(
                           user.displayName[0].toUpperCase(),
                           style: TextStyle(
@@ -401,10 +384,7 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                       ),
                       subtitle: Text(
                         user.rank.displayName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.grey400,
-                        ),
+                        style: TextStyle(fontSize: 12, color: AppTheme.grey400),
                       ),
                     );
                   },
@@ -420,70 +400,19 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
   Widget _buildMessageInput() {
     final authProvider = Provider.of<AuthProvider>(context);
     final lobbyProvider = Provider.of<LobbyProvider>(context);
-    final TextEditingController controller = TextEditingController();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.grey800,
-        border: Border(
-          top: BorderSide(color: AppTheme.grey700),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Message everyone...',
-                hintStyle: TextStyle(color: AppTheme.grey400),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.grey700),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.grey700),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.primaryPurple),
-                ),
-                filled: true,
-                fillColor: AppTheme.grey900,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onSubmitted: (value) {
-                _sendMessage(controller.text, authProvider, lobbyProvider);
-                controller.clear();
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: lobbyProvider.canSendMessage
-                ? () {
-                    _sendMessage(controller.text, authProvider, lobbyProvider);
-                    controller.clear();
-                  }
-                : null,
-            icon: Icon(
-              Icons.send,
-              color: lobbyProvider.canSendMessage
-                  ? AppTheme.primaryPurple
-                  : AppTheme.grey600,
-            ),
-            tooltip: lobbyProvider.canSendMessage
-                ? 'Send message'
-                : 'Wait ${lobbyProvider.timeUntilNextMessage?.inSeconds}s',
-          ),
-        ],
-      ),
+    return EnhancedMessageInput(
+      onSendMessage: (content, messageType, filePath) {
+        _sendMessage(
+          content,
+          messageType,
+          filePath,
+          authProvider,
+          lobbyProvider,
+        );
+      },
+      canSendMessage: lobbyProvider.canSendMessage,
+      cooldownRemaining: lobbyProvider.timeUntilNextMessage,
     );
   }
 
@@ -504,8 +433,8 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
     await lobbyProvider.joinLobby(
       lobbyId: lobby.id,
       userId: authProvider.appUser!.uid,
-      displayName: authProvider.appUser!.displayName ??
-          authProvider.appUser!.email,
+      displayName:
+          authProvider.appUser!.displayName ?? authProvider.appUser!.email,
       photoURL: authProvider.appUser!.photoURL,
       rank: rank,
     );
@@ -518,6 +447,8 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
 
   void _sendMessage(
     String content,
+    String messageType,
+    String? filePath,
     AuthProvider authProvider,
     LobbyProvider lobbyProvider,
   ) {
@@ -533,13 +464,19 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
       rank = LobbyRank.mod;
     }
 
+    // For now, use content as the media URL if provided
+    // TODO: Implement proper file upload to Firebase Storage
+    final mediaUrl = filePath;
+
     lobbyProvider.sendMessageToLobby(
       lobbyId: _currentLobbyId!,
       userId: authProvider.appUser!.uid,
-      userName: authProvider.appUser!.displayName ??
-          authProvider.appUser!.email,
+      userName:
+          authProvider.appUser!.displayName ?? authProvider.appUser!.email,
       userPhotoUrl: authProvider.appUser!.photoURL,
       content: content,
+      messageType: messageType,
+      mediaUrl: mediaUrl,
       userRank: rank.name,
     );
   }
@@ -568,13 +505,10 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
           children: [
             Text(
               'Topic: ${lobby.topic}',
-              style: TextStyle(color: AppTheme.grey300),
+              style: TextStyle(color: AppTheme.grey200),
             ),
             const SizedBox(height: 8),
-            Text(
-              lobby.description,
-              style: TextStyle(color: AppTheme.grey400),
-            ),
+            Text(lobby.description, style: TextStyle(color: AppTheme.grey400)),
             const SizedBox(height: 16),
             Text(
               '${lobby.onlineCount} online • ${lobby.totalMembers} members',
@@ -616,7 +550,10 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
                 },
               ),
             ListTile(
-              leading: Icon(Icons.emoji_emotions, color: AppTheme.primaryPurple),
+              leading: Icon(
+                Icons.emoji_emotions,
+                color: AppTheme.primaryPurple,
+              ),
               title: const Text('Add Reaction'),
               onTap: () {
                 Navigator.pop(context);
@@ -635,13 +572,13 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
     if (_currentLobbyId != null) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final lobbyProvider = Provider.of<LobbyProvider>(context, listen: false);
-      
+
       if (authProvider.appUser != null) {
         lobbyProvider.leaveLobby(
           lobbyId: _currentLobbyId!,
           userId: authProvider.appUser!.uid,
-          displayName: authProvider.appUser!.displayName ??
-              authProvider.appUser!.email,
+          displayName:
+              authProvider.appUser!.displayName ?? authProvider.appUser!.email,
         );
       }
     }

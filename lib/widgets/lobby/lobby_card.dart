@@ -111,7 +111,7 @@ class LobbyCard extends StatelessWidget {
                 lobby.description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.grey300,
+                  color: AppTheme.grey200,
                   height: 1.4,
                 ),
                 maxLines: 2,
@@ -199,7 +199,7 @@ class LobbyCard extends StatelessWidget {
     // Determine activity level based on online count
     final isActive = lobby.onlineCount >= 5;
     final activityText = isActive ? 'active now' : 'quiet';
-    final activityColor = isActive ? AppTheme.successGreen : AppTheme.grey500;
+    final activityColor = isActive ? AppTheme.successGreen : AppTheme.grey600;
 
     return Row(
       children: [

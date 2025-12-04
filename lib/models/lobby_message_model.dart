@@ -10,7 +10,7 @@ class LobbyMessage {
   final String? missionId;
   final String? missionTitle;
   final DateTime createdAt;
-  final String messageType; // 'text', 'image', 'gif', 'sticker', 'voice'
+  final String messageType; // 'text', 'image', 'gif', 'sticker', 'voice', 'system'
   final String? mediaUrl;
 
   // Voice note fields
@@ -23,6 +23,13 @@ class LobbyMessage {
   final String? replyToId; // ID of message being replied to
   final String? replyToContent; // Preview of original message
   final String? replyToUserName; // Name of original message author
+
+  // System message metadata
+  final String? systemType; // 'join', 'leave', 'welcome', 'pin', 'rank_change'
+  final Map<String, dynamic>? systemData; // Additional system message data
+
+  // User rank (for display)
+  final String? userRank; // 'guest', 'member', 'og', 'mod', 'admin'
 
   LobbyMessage({
     required this.id,
@@ -41,7 +48,12 @@ class LobbyMessage {
     this.replyToId,
     this.replyToContent,
     this.replyToUserName,
+    this.systemType,
+    this.systemData,
+    this.userRank,
   });
+
+  bool get isSystemMessage => messageType == 'system';
 
   factory LobbyMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -86,6 +98,9 @@ class LobbyMessage {
       replyToId: data['replyToId'],
       replyToContent: data['replyToContent'],
       replyToUserName: data['replyToUserName'],
+      systemType: data['systemType'],
+      systemData: data['systemData'],
+      userRank: data['userRank'],
     );
   }
 
@@ -98,6 +113,9 @@ class LobbyMessage {
       'mentions': mentions,
       'missionId': missionId,
       'missionTitle': missionTitle,
+      'systemType': systemType,
+      'systemData': systemData,
+      'userRank': userRank,
       'messageType': messageType,
       'mediaUrl': mediaUrl,
       'voiceDuration': voiceDuration,

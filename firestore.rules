@@ -324,5 +324,50 @@ service cloud.firestore {
       // Users can only write their own typing indicator
       allow write: if request.auth != null && request.auth.uid == userId;
     }
+    
+    // Lobbies (community spaces)
+    match /lobbies/{lobbyId} {
+      // Anyone authenticated can read lobby info
+      allow read: if request.auth != null;
+      
+      // Only admins can create/update/delete lobbies
+      allow create, update, delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      
+      // Lobby messages subcollection
+      match /messages/{messageId} {
+        // Anyone in lobby can read messages
+        allow read: if request.auth != null;
+        
+        // Authenticated users can create messages with rate limiting (enforced in app)
+        allow create: if request.auth != null && 
+          request.resource.data.userId == request.auth.uid &&
+          isValidString(request.resource.data.content, 1, 2000);
+        
+        // Users can delete their own messages OR admins/mods can delete any
+        allow delete: if request.auth != null && (
+          resource.data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'mod']
+        );
+        
+        // Anyone can update reactions
+        allow update: if request.auth != null;
+      }
+      
+      // Lobby users subcollection (presence)
+      match /users/{userId} {
+        // Anyone in lobby can read user list
+        allow read: if request.auth != null;
+        
+        // Users can only create/update their own presence
+        allow create, update: if request.auth != null && request.auth.uid == userId;
+        
+        // Users can delete their own presence OR auto-cleanup
+        allow delete: if request.auth != null && (
+          request.auth.uid == userId ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+      }
+    }
   }
 }

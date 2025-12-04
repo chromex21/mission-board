@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../core/theme/app_theme.dart';
+import '../../config/api_config.dart';
 
-const String _tenorApiKey = 'AIzaSyABhG8AuvmS_NnDBa9GyvsP4UGITIg7F1Y';
+// API key moved to config file for security
+final String _tenorApiKey = ApiConfig.tenorApiKey;
 
 class MediaPickerBottomSheet extends StatefulWidget {
   final Function(String url, MediaType type) onMediaSelected;

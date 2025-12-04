@@ -135,23 +135,40 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // Account Actions
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await auth.signOut();
-                    if (context.mounted) {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    }
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor:
-                        AppTheme.errorRed, // Keep error red for logout
-                    side: const BorderSide(color: AppTheme.errorRed),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+                child: Column(
+                  children: [
+                    // Logout Button
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await auth.signOut();
+                        if (context.mounted) {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                        }
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Logout'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.warningOrange,
+                        side: const BorderSide(color: AppTheme.warningOrange),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Delete Account Button
+                    OutlinedButton.icon(
+                      onPressed: () => _showDeleteAccountDialog(context, auth),
+                      icon: const Icon(Icons.delete_forever),
+                      label: const Text('Delete Account'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.errorRed,
+                        side: const BorderSide(color: AppTheme.errorRed),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -351,6 +368,111 @@ class SettingsScreen extends StatelessWidget {
         ),
       );
     }
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    final passwordController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.grey900,
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: AppTheme.errorRed),
+            const SizedBox(width: 8),
+            const Text('Delete Account'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This action is permanent and cannot be undone.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Text('All your data will be permanently deleted:'),
+            const SizedBox(height: 8),
+            const Text('• Profile and account information'),
+            const Text('• Mission history and progress'),
+            const Text('• Messages and notifications'),
+            const Text('• Teams and collaborations'),
+            const SizedBox(height: 16),
+            const Text('Enter your password to confirm:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: AppTheme.grey800,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final password = passwordController.text;
+              if (password.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter your password')),
+                );
+                return;
+              }
+              
+              try {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                
+                await auth.deleteAccount(password);
+                
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Account deleted successfully'),
+                      backgroundColor: AppTheme.successGreen,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppTheme.errorRed,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+            ),
+            child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showRoleSwitchDialog(BuildContext context, AuthProvider auth) {

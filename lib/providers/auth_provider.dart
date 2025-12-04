@@ -106,7 +106,13 @@ class AuthProvider extends ChangeNotifier {
           .set(newUser.toMap());
 
       // Send email verification
-      await credential.user!.sendEmailVerification();
+      try {
+        await credential.user!.sendEmailVerification();
+        debugPrint('✅ Email verification sent to: $email');
+      } catch (e) {
+        debugPrint('⚠️ Email verification failed: $e');
+        // Continue even if email fails - user can still use app
+      }
 
       // Persist login by default
       await _auth.setPersistence(Persistence.LOCAL);
@@ -221,6 +227,70 @@ class AuthProvider extends ChangeNotifier {
   }
 
   bool get isAdmin => appUser?.role == UserRole.admin;
+
+  /// Delete user account and all associated data
+  Future<void> deleteAccount(String password) async {
+    if (user == null) {
+      throw Exception('No user logged in');
+    }
+
+    try {
+      // Re-authenticate user before deletion
+      final credential = EmailAuthProvider.credential(
+        email: user!.email!,
+        password: password,
+      );
+      await user!.reauthenticateWithCredential(credential);
+
+      // Delete user data from Firestore
+      final uid = user!.uid;
+      
+      // Delete user document
+      await _db.collection('users').doc(uid).delete();
+      
+      // Delete user's missions
+      final missionsSnapshot = await _db
+          .collection('missions')
+          .where('createdBy', isEqualTo: uid)
+          .get();
+      for (var doc in missionsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Delete user's messages
+      final messagesSnapshot = await _db
+          .collection('lobby_messages')
+          .where('senderId', isEqualTo: uid)
+          .get();
+      for (var doc in messagesSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Delete user's notifications
+      final notificationsSnapshot = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('notifications')
+          .get();
+      for (var doc in notificationsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // Finally, delete Firebase Auth account
+      await user!.delete();
+      
+      debugPrint('✅ Account deleted successfully');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw Exception('Incorrect password');
+      } else if (e.code == 'requires-recent-login') {
+        throw Exception('Please log out and log in again before deleting your account');
+      }
+      throw Exception(e.message ?? 'Failed to delete account');
+    } catch (e) {
+      throw Exception('Failed to delete account: $e');
+    }
+  }
 
   /// Stream all users with their online status
   Stream<List<Map<String, dynamic>>> streamOnlineUsers() {

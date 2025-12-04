@@ -415,7 +415,7 @@ class _AppSidebarState extends State<AppSidebar> {
                       color: isActive
                           ? AppTheme.primaryPurple
                           : AppTheme.grey400,
-                      size: 22,
+                      size: 20,
                     ),
                     const SizedBox(width: 12),
                     Flexible(

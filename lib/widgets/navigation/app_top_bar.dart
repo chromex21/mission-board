@@ -29,12 +29,14 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Container(
       height: 64,
       decoration: BoxDecoration(
-        color: AppTheme.grey900,
+        color:
+            Theme.of(context).appBarTheme.backgroundColor ?? AppTheme.grey900,
         border: Border(bottom: BorderSide(color: AppTheme.grey800, width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -66,7 +68,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             const SizedBox(width: 8),
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                color: primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: IconButton(
@@ -106,10 +108,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Icons.people,
-                                    color: AppTheme.primaryPurple,
-                                  ),
+                                  Icon(Icons.people, color: primary),
                                   const SizedBox(width: 8),
                                   const Text(
                                     'Active Users',
@@ -173,7 +172,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                             )
                           : null,
                       filled: true,
-                      fillColor: AppTheme.grey800,
+                      fillColor:
+                          Theme.of(context).inputDecorationTheme.fillColor ??
+                          AppTheme.grey800,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: AppTheme.grey700),
@@ -184,10 +185,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: AppTheme.primaryPurple,
-                          width: 2,
-                        ),
+                        borderSide: BorderSide(color: primary, width: 2),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -283,9 +281,9 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                  color: primary.withValues(alpha: 0.2),
                   border: Border.all(
-                    color: AppTheme.primaryPurple.withValues(alpha: 0.3),
+                    color: primary.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
@@ -294,13 +292,11 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                         child: Image.network(
                           authProvider.appUser!.photoURL!,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(Icons.person, color: primary, size: 20),
                         ),
                       )
-                    : Icon(
-                        Icons.person,
-                        color: AppTheme.primaryPurple,
-                        size: 20,
-                      ),
+                    : Icon(Icons.person, color: primary, size: 20),
               ),
             ),
           ),

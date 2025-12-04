@@ -129,7 +129,7 @@ class NotificationProvider with ChangeNotifier {
       for (int i = 0; i < demoNotifications.length; i++) {
         final notif = demoNotifications[i];
         final docRef = _firestore.collection('notifications').doc();
-        
+
         batch.set(docRef, {
           'userId': userId,
           'type': (notif['type'] as NotificationType).name,

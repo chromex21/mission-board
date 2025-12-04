@@ -297,20 +297,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   'No notifications yet',
                   style: TextStyle(fontSize: 16, color: AppTheme.grey400),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await notificationProvider.populateDummyNotifications(userId);
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Load Demo Notifications'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPurple,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
+                const SizedBox(height: 8),
+                Text(
+                  'You\'ll see notifications here when you receive them',
+                  style: TextStyle(fontSize: 14, color: AppTheme.grey600),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),

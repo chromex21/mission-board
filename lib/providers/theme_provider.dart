@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AppThemeMode { dark, light, purple }
+enum AppThemeMode { dark, blue }
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'isDarkMode';
@@ -12,7 +12,7 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
   AppThemeMode get currentTheme => _currentTheme;
 
-  // Available themes for demo
+  // Available themes
   final List<Map<String, dynamic>> availableThemes = [
     {
       'name': 'Dark Mode',
@@ -22,18 +22,11 @@ class ThemeProvider extends ChangeNotifier {
       'primaryColor': Color(0xFF8B5CF6),
     },
     {
-      'name': 'Light Mode',
-      'mode': AppThemeMode.light,
-      'icon': Icons.light_mode,
-      'description': 'Bright and clean',
-      'primaryColor': Color(0xFF8B5CF6),
-    },
-    {
-      'name': 'Purple Glow',
-      'mode': AppThemeMode.purple,
-      'icon': Icons.auto_awesome,
-      'description': 'Vibrant purple theme',
-      'primaryColor': Color(0xFF9333EA),
+      'name': 'Blue Aurora',
+      'mode': AppThemeMode.blue,
+      'icon': Icons.water_drop,
+      'description': 'Cool blue accents',
+      'primaryColor': Color(0xFF3B82F6),
     },
   ];
 
@@ -72,7 +65,7 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> setThemeMode(AppThemeMode mode) async {
     if (_currentTheme == mode) return;
     _currentTheme = mode;
-    _isDarkMode = mode != AppThemeMode.light;
+    _isDarkMode = true; // Both themes are dark-based
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, mode.name);
     await prefs.setBool(_themeKey, _isDarkMode);

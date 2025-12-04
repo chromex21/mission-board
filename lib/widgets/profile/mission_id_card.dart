@@ -1,13 +1,22 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../models/user_model.dart';
 import '../../core/theme/app_theme.dart';
+
+enum CardStyle { gradient, solid, minimal }
 
 class MissionIdCard extends StatefulWidget {
   final AppUser user;
   final bool isFlippable;
+  final CardStyle cardStyle;
 
-  const MissionIdCard({super.key, required this.user, this.isFlippable = true});
+  const MissionIdCard({
+    super.key,
+    required this.user,
+    this.isFlippable = true,
+    this.cardStyle = CardStyle.gradient,
+  });
 
   @override
   State<MissionIdCard> createState() => _MissionIdCardState();
@@ -82,22 +91,23 @@ class _MissionIdCardState extends State<MissionIdCard>
   }
 
   Widget _buildFrontCard() {
+    final isAdmin = widget.user.role == UserRole.admin;
+
     return Container(
       height: 220,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryPurple,
-            AppTheme.primaryPurple.withValues(alpha: 0.7),
-            const Color(0xFF1A1A2E),
-          ],
-        ),
+        gradient: _getFrontGradient(isAdmin),
         borderRadius: BorderRadius.circular(16),
+        border: isAdmin
+            ? Border.all(
+                color: AppTheme.warningOrange.withValues(alpha: 0.5),
+                width: 2,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryPurple.withValues(alpha: 0.3),
+            color: (isAdmin ? AppTheme.warningOrange : AppTheme.primaryPurple)
+                .withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -118,9 +128,10 @@ class _MissionIdCardState extends State<MissionIdCard>
 
           // Content
           Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // Header
                 Row(
@@ -183,23 +194,13 @@ class _MissionIdCardState extends State<MissionIdCard>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
-                        image: widget.user.photoURL != null
-                            ? DecorationImage(
-                                image: NetworkImage(widget.user.photoURL!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                        color: widget.user.photoURL == null
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : null,
+                        color: Colors.white.withValues(alpha: 0.2),
                       ),
-                      child: widget.user.photoURL == null
-                          ? Icon(
-                              Icons.person,
-                              size: 28,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            )
-                          : null,
+                      child: Icon(
+                        Icons.person,
+                        size: 28,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
                     ),
 
                     const SizedBox(width: 16),
@@ -256,7 +257,7 @@ class _MissionIdCardState extends State<MissionIdCard>
                   ],
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Stats
                 Row(
@@ -296,19 +297,15 @@ class _MissionIdCardState extends State<MissionIdCard>
   Widget _buildBackCard() {
     final joinDate = widget.user.createdAt ?? DateTime.now();
     final rankTitle = AppUser.getRankTitle(widget.user.level);
+    final isAdmin = widget.user.role == UserRole.admin;
+
+    // Generate user profile URL for QR code
+    final profileData = 'mission-board://user/${widget.user.uid}';
 
     return Container(
       height: 220,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF1A1A2E),
-            AppTheme.primaryPurple.withValues(alpha: 0.7),
-            AppTheme.primaryPurple,
-          ],
-        ),
+        gradient: _getBackGradient(isAdmin),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -322,71 +319,168 @@ class _MissionIdCardState extends State<MissionIdCard>
         children: [
           // Background pattern
           Positioned(
-            left: -50,
-            bottom: -50,
+            left: -30,
+            bottom: -30,
             child: Icon(
-              Icons.military_tech,
-              size: 200,
+              isAdmin ? Icons.shield : Icons.military_tech,
+              size: 160,
               color: Colors.white.withValues(alpha: 0.05),
             ),
           ),
 
           // Content
           Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+            padding: const EdgeInsets.all(18),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      rankTitle.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
+                // Left side - QR Code
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              rankTitle.toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isAdmin)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.warningOrange,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'ADMIN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
+
+                      const SizedBox(height: 12),
+
+                      // QR Code
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: QrImageView(
+                          data: profileData,
+                          version: QrVersions.auto,
+                          size: 80,
+                          backgroundColor: Colors.white,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: Colors.black,
+                          ),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: Colors.black,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.verified,
-                        size: 20,
-                        color: Colors.white,
+
+                      const SizedBox(height: 8),
+
+                      Text(
+                        'Scan to connect',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 9,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(width: 16),
 
-                // Stats grid
+                // Right side - Stats
                 Expanded(
+                  flex: 3,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildBackStat('Join Date', _formatDate(joinDate)),
-                      _buildBackStat(
-                        'Total Points',
-                        '${widget.user.totalPoints} XP',
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildCompactStat('Joined', _formatDate(joinDate)),
+                          const SizedBox(height: 10),
+                          _buildCompactStat(
+                            'Total XP',
+                            widget.user.totalPoints.toString().replaceAllMapped(
+                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                              (Match m) => '${m[1]},',
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildCompactStat(
+                            'Missions',
+                            widget.user.completedMissions.toString(),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildCompactStat(
+                                  'Streak',
+                                  '${widget.user.currentStreak}d',
+                                ),
+                              ),
+                              Expanded(
+                                child: _buildCompactStat(
+                                  'Best',
+                                  '${widget.user.bestStreak}d',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      _buildBackStat(
-                        'Current Streak',
-                        '${widget.user.currentStreak} days',
+
+                      // Verification badge
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            size: 14,
+                            color: AppTheme.successGreen,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Verified Agent',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
-                      _buildBackStat(
-                        'Best Streak',
-                        '${widget.user.bestStreak} days',
-                      ),
-                      if (widget.user.bio != null)
-                        _buildBackStat('Bio', widget.user.bio!, maxLines: 2),
                     ],
                   ),
                 ),
@@ -401,7 +495,7 @@ class _MissionIdCardState extends State<MissionIdCard>
               right: 8,
               child: Icon(
                 Icons.flip,
-                size: 16,
+                size: 14,
                 color: Colors.white.withValues(alpha: 0.3),
               ),
             ),
@@ -433,31 +527,78 @@ class _MissionIdCardState extends State<MissionIdCard>
     );
   }
 
-  Widget _buildBackStat(String label, String value, {int maxLines = 1}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildCompactStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
             fontSize: 13,
+            fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.right,
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+      ],
+    );
+  }
+
+  LinearGradient _getFrontGradient(bool isAdmin) {
+    if (isAdmin) {
+      return LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          AppTheme.warningOrange,
+          AppTheme.warningOrange.withValues(alpha: 0.7),
+          const Color(0xFF1A1A2E),
+        ],
+      );
+    }
+
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        AppTheme.primaryPurple,
+        AppTheme.primaryPurple.withValues(alpha: 0.7),
+        const Color(0xFF1A1A2E),
+      ],
+    );
+  }
+
+  LinearGradient _getBackGradient(bool isAdmin) {
+    if (isAdmin) {
+      return LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF1A1A2E),
+          AppTheme.warningOrange.withValues(alpha: 0.6),
+          AppTheme.warningOrange,
+        ],
+      );
+    }
+
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        const Color(0xFF1A1A2E),
+        AppTheme.primaryPurple.withValues(alpha: 0.7),
+        AppTheme.primaryPurple,
       ],
     );
   }

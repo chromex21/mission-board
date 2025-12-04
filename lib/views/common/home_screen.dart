@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../worker/mission_board_screen.dart';
 import '../worker/history_screen.dart';
 import '../worker/leaderboard_screen.dart';
 import '../worker/mission_feed_view.dart';
-import '../worker/mission_marketplace_view.dart';
+import '../worker/missions_dashboard_view.dart';
 import '../team/teams_screen.dart';
 import '../admin/admin_panel_screen.dart';
 import 'profile_screen.dart';
@@ -35,10 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_currentRoute) {
       case '/mission-feed':
         return MissionFeedView(onNavigate: _handleNavigation);
-      case '/mission-marketplace':
-        return MissionMarketplaceView(onNavigate: _handleNavigation);
       case '/missions':
-        return MissionBoardScreen(onNavigate: _handleNavigation);
+        return MissionsDashboardView(onNavigate: _handleNavigation);
       case '/missions/history':
         return HistoryScreen(onNavigate: _handleNavigation);
       case '/teams':
@@ -52,13 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
       case '/admin':
         return authProvider.isAdmin
             ? AdminPanelScreen(onNavigate: _handleNavigation)
-            : MissionBoardScreen(onNavigate: _handleNavigation);
+            : MissionsDashboardView(onNavigate: _handleNavigation);
       case '/profile':
         return ProfileScreen(onNavigate: _handleNavigation);
       case '/settings':
         return SettingsScreen(onNavigate: _handleNavigation);
       default:
-        return MissionBoardScreen(onNavigate: _handleNavigation);
+        return MissionsDashboardView(onNavigate: _handleNavigation);
     }
   }
 

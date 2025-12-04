@@ -60,9 +60,9 @@ class AppSizing {
     if (AppBreakpoints.isMobile(context)) {
       return double.infinity;
     } else if (AppBreakpoints.isTablet(context)) {
-      return 800;
+      return 680;
     } else {
-      return 1200;
+      return 680; // Optimal readability: 45-75 characters per line
     }
   }
 
@@ -71,7 +71,7 @@ class AppSizing {
     if (AppBreakpoints.isMobile(context)) {
       return double.infinity;
     } else if (AppBreakpoints.isTablet(context)) {
-      return 600;
+      return 500;
     } else {
       return 800;
     }

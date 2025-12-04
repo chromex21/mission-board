@@ -33,9 +33,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.grey900,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.grey800,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         title: const Text('Create Mission'),
         elevation: 0,
       ),
@@ -54,21 +54,25 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Enter a clear mission title',
-                  hintStyle: TextStyle(color: AppTheme.grey600),
+                  hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
                   filled: true,
-                  fillColor: AppTheme.grey800,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
-                      color: AppTheme.primaryPurple,
+                      color: Theme.of(context).colorScheme.primary,
                       width: 2,
                     ),
                   ),
@@ -94,21 +98,25 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   hintText: 'Describe what needs to be done...',
-                  hintStyle: TextStyle(color: AppTheme.grey600),
+                  hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
                   filled: true,
-                  fillColor: AppTheme.grey800,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
-                      color: AppTheme.primaryPurple,
+                      color: Theme.of(context).colorScheme.primary,
                       width: 2,
                     ),
                   ),
@@ -134,25 +142,29 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   hintText: '100',
-                  hintStyle: TextStyle(color: AppTheme.grey600),
+                  hintStyle: Theme.of(context).inputDecorationTheme.hintStyle,
                   prefixIcon: Icon(
                     Icons.monetization_on,
                     color: AppTheme.warningOrange,
                   ),
                   filled: true,
-                  fillColor: AppTheme.grey800,
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.grey700),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
-                      color: AppTheme.primaryPurple,
+                      color: Theme.of(context).colorScheme.primary,
                       width: 2,
                     ),
                   ),
@@ -176,9 +188,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey800,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.grey700),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Column(
                   children: [
@@ -213,14 +225,17 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                       max: 5,
                       divisions: 4,
                       activeColor: _getDifficultyColor(),
-                      inactiveColor: AppTheme.grey700,
+                      inactiveColor: Theme.of(context).dividerColor,
                       onChanged: (value) {
                         setState(() => _difficulty = value.toInt());
                       },
                     ),
                     Text(
                       _getDifficultyLabel(),
-                      style: TextStyle(color: AppTheme.grey400, fontSize: 12),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -233,9 +248,9 @@ class _CreateMissionViewState extends State<CreateMissionView> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppTheme.grey800,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.grey700),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Row(
                   children: [
@@ -271,8 +286,8 @@ class _CreateMissionViewState extends State<CreateMissionView> {
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _createMission,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPurple,
-                    disabledBackgroundColor: AppTheme.grey700,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    disabledBackgroundColor: Theme.of(context).dividerColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -427,11 +442,14 @@ class _VisibilityButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primaryPurple.withOpacity(0.2)
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: isSelected
-              ? Border.all(color: AppTheme.primaryPurple, width: 2)
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                )
               : null,
         ),
         child: Row(
@@ -439,14 +457,18 @@ class _VisibilityButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.primaryPurple : AppTheme.grey400,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).textTheme.bodySmall?.color,
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppTheme.primaryPurple : AppTheme.grey400,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).textTheme.bodySmall?.color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),

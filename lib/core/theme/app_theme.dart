@@ -19,11 +19,11 @@ class AppTheme {
   static const infoBlue = Color(0xFF58A6FF);
 
   // Light theme colors
-  static const lightBg = Color(0xFFFAFBFC); // Light background
-  static const lightCard = Color(0xFFFFFFFF); // White cards
+  static const lightBg = Color(0xFFE8ECEF); // Softer grey background
+  static const lightCard = Color(0xFFF6F8FA); // Off-white cards for less glare
   static const lightBorder = Color(0xFFD0D7DE); // Light border
-  static const lightText = Color(0xFF24292F); // Dark text for light theme
-  static const lightSubtext = Color(0xFF57606A); // Muted text for light theme
+  static const lightText = Color(0xFF1F2328); // Darker text for better contrast
+  static const lightSubtext = Color(0xFF656D76); // Darker muted text
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -457,6 +457,138 @@ class AppTheme {
         side: BorderSide(color: grey700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+
+  static ThemeData get blueTheme {
+    // A cool blue aurora theme with rich blue accents
+    const deepBlue = Color(0xFF0A1628); // Deep blue-black background
+    const blueTint = Color(0xFF1E293B); // Blue-tinted surface
+    const brightBlue = Color(0xFF3B82F6); // Rich blue accent
+    const skyBlue = Color(0xFF60A5FA); // Lighter blue for highlights
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: deepBlue,
+      primaryColor: brightBlue,
+      colorScheme: const ColorScheme.dark(
+        primary: brightBlue,
+        secondary: skyBlue,
+        surface: blueTint,
+        error: errorRed,
+        onPrimary: white,
+        onSecondary: white,
+        onSurface: grey200,
+        onError: white,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: blueTint,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: grey200),
+        toolbarHeight: 56,
+      ),
+      cardTheme: CardThemeData(
+        color: blueTint,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: brightBlue, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: blueTint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: brightBlue, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: brightBlue, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: skyBlue, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(6),
+          borderSide: const BorderSide(color: errorRed),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        labelStyle: const TextStyle(color: grey400),
+        hintStyle: const TextStyle(color: grey600),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: brightBlue,
+          foregroundColor: white,
+          elevation: 4,
+          shadowColor: brightBlue.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: brightBlue,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: grey200,
+          side: const BorderSide(color: grey700),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+      ),
+      textTheme: darkTheme.textTheme,
+      dividerTheme: const DividerThemeData(
+        color: brightBlue,
+        thickness: 1,
+        space: 1,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: blueTint,
+        selectedItemColor: brightBlue,
+        unselectedItemColor: grey400,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+      ),
+      tabBarTheme: const TabBarThemeData(
+        labelColor: brightBlue,
+        unselectedLabelColor: grey400,
+        indicatorColor: brightBlue,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 14),
+      ),
+      iconTheme: const IconThemeData(color: grey200, size: 20),
+      chipTheme: ChipThemeData(
+        backgroundColor: blueTint,
+        labelStyle: const TextStyle(color: grey200, fontSize: 12),
+        side: const BorderSide(color: brightBlue),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }

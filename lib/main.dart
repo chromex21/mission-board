@@ -60,15 +60,22 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer2<AuthProvider, ThemeProvider>(
         builder: (context, auth, themeProvider, _) {
+          final themeData = () {
+            switch (themeProvider.currentTheme) {
+              case AppThemeMode.blue:
+                return AppTheme.blueTheme;
+              case AppThemeMode.dark:
+                return AppTheme.darkTheme;
+            }
+          }();
+
+          final themeMode = ThemeMode.dark; // Both themes use dark mode
+
           return MaterialApp(
             title: 'Mission Board',
-            theme: themeProvider.isDarkMode
-                ? AppTheme.darkTheme
-                : AppTheme.lightTheme,
+            theme: themeData,
             darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.isDarkMode
-                ? ThemeMode.dark
-                : ThemeMode.light,
+            themeMode: themeMode,
             // Use a reactive home instead of initialRoute so it updates on auth changes
             home: auth.user == null
                 ? const LoginScreen()

@@ -1,351 +1,195 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../core/theme/app_theme.dart';
+import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../services/sound_service.dart';
-import '../../services/update_service.dart';
-import '../../core/theme/app_theme.dart';
 import '../../widgets/layout/app_layout.dart';
-import '../../utils/notification_helper.dart';
 import '../../utils/responsive_helper.dart';
-import '../../utils/demo_data_helper.dart';
+import '../../utils/cleanup_demo_data.dart';
+import '../../services/update_service.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   final Function(String)? onNavigate;
-
   const SettingsScreen({super.key, this.onNavigate});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool notificationsEnabled = true;
-  bool emailNotifications = false;
-
-  @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final soundService = Provider.of<SoundService>(context);
+    final auth = context.watch<AuthProvider>();
+    final theme = context.watch<ThemeProvider>();
 
     return AppLayout(
-      currentRoute: '/settings',
       title: 'Settings',
-      onNavigate: widget.onNavigate ?? (route) {},
-      child: ResponsiveContent(
-        maxWidth: AppSizing.maxContentWidth(context),
-        child: ListView(
-          padding: AppPadding.page(context),
-          children: [
-            // Account Section
-            _SectionHeader(title: 'Account'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.grey900,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.grey700),
-              ),
-              child: Column(
+      currentRoute: '/settings',
+      onNavigate: onNavigate ?? (_) {},
+      child: Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: AppSizing.maxContentWidth(context),
+          ),
+          child: ListView(
+            children: [
+              const _SectionHeader(title: 'Account'),
+              _buildCard(
+                context,
                 children: [
                   ListTile(
                     leading: Icon(
-                      Icons.email_outlined,
-                      color: AppTheme.grey200,
+                      Icons.lock_outline,
+                      color: Theme.of(context).iconTheme.color,
                     ),
-                    title: const Text('Email'),
-                    subtitle: Text(
-                      authProvider.user?.email ?? 'Not available',
-                      style: TextStyle(color: AppTheme.grey400),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                  Divider(height: 1, color: AppTheme.grey700),
-                  ListTile(
-                    leading: Icon(Icons.lock_outline, color: AppTheme.grey200),
                     title: const Text('Change Password'),
                     trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: () {
-                      _showChangePasswordDialog(context, authProvider);
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
+                    onTap: () => _showChangePasswordDialog(context, auth),
                   ),
-                  Divider(height: 1, color: AppTheme.grey700),
+                  const Divider(height: 1),
                   ListTile(
                     leading: Icon(
                       Icons.admin_panel_settings_outlined,
-                      color: AppTheme.grey200,
+                      color: Theme.of(context).iconTheme.color,
                     ),
                     title: const Text('Role'),
                     subtitle: Text(
-                      authProvider.isAdmin ? 'Administrator' : 'Agent',
+                      auth.isAdmin ? 'Administrator' : 'Agent',
                       style: TextStyle(
-                        color: authProvider.isAdmin
-                            ? AppTheme.primaryPurple
+                        color: auth.isAdmin
+                            ? Theme.of(context).colorScheme.primary
                             : AppTheme.successGreen,
                       ),
                     ),
                     trailing: const Icon(Icons.swap_horiz, size: 20),
-                    onTap: () {
-                      _showRoleSwitchDialog(context, authProvider);
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
+                    onTap: () => _showRoleSwitchDialog(context, auth),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              const _SectionHeader(title: 'Theme'),
+              _buildCard(
+                context,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 4,
+                      vertical: 8,
+                    ),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _ThemeChip(
+                          label: 'Dark',
+                          selected: theme.currentTheme == AppThemeMode.dark,
+                          onTap: () => theme.setThemeMode(AppThemeMode.dark),
+                        ),
+                        _ThemeChip(
+                          label: 'Blue Aurora',
+                          selected: theme.currentTheme == AppThemeMode.blue,
+                          onTap: () => theme.setThemeMode(AppThemeMode.blue),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
 
-            // Theme Section
-            _SectionHeader(title: 'Theme'),
-            _ThemeSelector(),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Notifications Section
-            _SectionHeader(title: 'Notifications'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.grey900,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.grey700),
-              ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    secondary: Icon(
-                      Icons.volume_up_outlined,
-                      color: AppTheme.grey200,
-                    ),
-                    title: const Text('Sound Effects'),
-                    subtitle: Text(
-                      'Play sounds for missions and achievements',
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    value: soundService.soundEnabled,
-                    onChanged: (value) {
-                      soundService.toggleSound();
-                      soundService.play(SoundEffect.success);
-                    },
-                    activeThumbColor: AppTheme.primaryPurple,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Demo Data Section
-            _SectionHeader(title: 'Demo Data'),
-            _DemoDataSection(),
-            const SizedBox(height: 24),
-
-            // App Info Section
-            _SectionHeader(title: 'App Info'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.grey900,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.grey700),
-              ),
-              child: ListTile(
-                leading: Icon(
-                  Icons.system_update_outlined,
-                  color: AppTheme.grey200,
-                ),
-                title: const Text('Check for Updates'),
-                subtitle: Text(
-                  'Version 1.2.0',
-                  style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                ),
-                trailing: const Icon(Icons.chevron_right, size: 20),
-                onTap: () => _checkForUpdates(context, authProvider),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Data & Privacy Section
-            _SectionHeader(title: 'Data & Privacy'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.grey900,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.grey700),
-              ),
-              child: Column(
+              const _SectionHeader(title: 'About'),
+              _buildCard(
+                context,
                 children: [
                   ListTile(
-                    leading: Icon(
-                      Icons.download_outlined,
-                      color: AppTheme.grey200,
-                    ),
-                    title: const Text('Export Data'),
-                    subtitle: Text(
-                      'Download your mission history',
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: () {
-                      context.showInfo('Export feature coming soon!');
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                  Divider(height: 1, color: AppTheme.grey700),
-                  ListTile(
-                    leading: Icon(
-                      Icons.delete_outline,
-                      color: AppTheme.errorRed,
-                    ),
-                    title: Text(
-                      'Delete Account',
-                      style: TextStyle(color: AppTheme.errorRed),
-                    ),
-                    subtitle: Text(
-                      'Permanently delete your account',
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: AppTheme.errorRed,
-                    ),
-                    onTap: () {
-                      _showDeleteAccountDialog(context, authProvider);
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // About Section
-            _SectionHeader(title: 'About'),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.grey900,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.grey700),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.info_outline, color: AppTheme.grey200),
+                    leading: Icon(Icons.info_outline),
                     title: const Text('Version'),
-                    subtitle: Text(
-                      '1.0.0',
-                      style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
+                    subtitle: const Text('1.2.0'),
                   ),
-                  Divider(height: 1, color: AppTheme.grey700),
+                  const Divider(height: 1),
                   ListTile(
                     leading: Icon(
-                      Icons.description_outlined,
-                      color: AppTheme.grey200,
+                      Icons.system_update,
+                      color: Theme.of(context).iconTheme.color,
                     ),
-                    title: const Text('Terms of Service'),
+                    title: const Text('Check for Updates'),
+                    subtitle: const Text('Get the latest version'),
                     trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: () {
-                      context.showInfo('Terms of Service coming soon!');
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
+                    onTap: () => _checkForUpdates(context),
                   ),
-                  Divider(height: 1, color: AppTheme.grey700),
-                  ListTile(
-                    leading: Icon(
-                      Icons.privacy_tip_outlined,
-                      color: AppTheme.grey200,
+                  if (auth.appUser?.role == UserRole.admin) ...[
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_sweep,
+                        color: AppTheme.warningOrange,
+                      ),
+                      title: const Text('Clean Demo Data'),
+                      subtitle: const Text('Remove test activities from feed'),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: () => _cleanupDemoData(context),
                     ),
-                    title: const Text('Privacy Policy'),
-                    trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: () {
-                      context.showInfo('Privacy Policy coming soon!');
-                    },
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                  ),
+                  ],
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
 
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await authProvider.signOut();
-                  if (context.mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  }
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.errorRed,
-                  side: BorderSide(color: AppTheme.errorRed),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              const SizedBox(height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await auth.signOut();
+                    if (context.mounted) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Logout'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor:
+                        AppTheme.errorRed, // Keep error red for logout
+                    side: const BorderSide(color: AppTheme.errorRed),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-          ],
+
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showChangePasswordDialog(
-    BuildContext context,
-    AuthProvider authProvider,
-  ) {
+  static Widget _buildCard(
+    BuildContext context, {
+    required List<Widget> children,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.grey800,
+        backgroundColor: Theme.of(context).cardColor,
         title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'A password reset link will be sent to ${authProvider.user?.email}',
-              style: TextStyle(color: AppTheme.grey400, fontSize: 14),
-            ),
-          ],
+        content: Text(
+          'A password reset link will be sent to ${auth.user?.email ?? 'your email'}',
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodySmall?.color,
+            fontSize: 14,
+          ),
         ),
         actions: [
           TextButton(
@@ -355,16 +199,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             onPressed: () async {
               try {
-                await authProvider.sendPasswordReset(
-                  authProvider.user?.email ?? '',
-                );
+                final email = auth.user?.email ?? '';
+                await auth.sendPasswordReset(email);
                 if (context.mounted) {
                   Navigator.pop(context);
-                  context.showSuccess('Password reset email sent!');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Password reset email sent!')),
+                  );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  context.showError('Error: ${e.toString()}');
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -375,28 +222,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showRoleSwitchDialog(BuildContext context, AuthProvider authProvider) {
+  void _checkForUpdates(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final updateInfo = await UpdateService.checkForUpdate();
+
+      if (!context.mounted) return;
+      navigator.pop(); // Close loading dialog
+
+      if (updateInfo != null) {
+        await UpdateService.showUpdateDialog(context, updateInfo);
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('You\'re on the latest version!'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      navigator.pop(); // Close loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error checking for updates: $e'),
+          backgroundColor: AppTheme.errorRed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _cleanupDemoData(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: AppTheme.warningOrange),
+            const SizedBox(width: 8),
+            const Text('Clean Demo Data'),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete all demo activities from the Mission Feed. '
+          'This action cannot be undone.\n\n'
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => navigator.pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => navigator.pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.warningOrange,
+            ),
+            child: const Text('Clean Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppTheme.warningOrange),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text('Cleaning demo data...'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final deletedCount = await DemoDataCleanup.cleanupDemoActivities();
+
+      if (!context.mounted) return;
+      navigator.pop(); // Close loading dialog
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            deletedCount > 0
+                ? 'Successfully deleted $deletedCount demo activities'
+                : 'No demo data found - database is clean',
+          ),
+          backgroundColor: AppTheme.successGreen,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      navigator.pop(); // Close loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error cleaning demo data: $e'),
+          backgroundColor: AppTheme.errorRed,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _showRoleSwitchDialog(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.grey800,
         title: const Text('Switch Role'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Current role: ${authProvider.isAdmin ? "Administrator" : "Agent"}',
-              style: TextStyle(color: AppTheme.grey400, fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              authProvider.isAdmin
-                  ? 'Switch to Agent role to accept and complete missions'
-                  : 'Switch to Admin role to create missions and manage teams',
-              style: TextStyle(color: AppTheme.grey200, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
+        content: Text(
+          'Switch to ${auth.isAdmin ? 'Agent' : 'Administrator'} role?',
+          style: TextStyle(color: AppTheme.grey400, fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -405,234 +370,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final newRole = authProvider.isAdmin ? "Agent" : "Admin";
-              try {
-                await authProvider.switchRole();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  context.showSuccess('Role switched to $newRole');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  context.showError('Failed to switch role: $e');
-                }
+              await auth.switchRole();
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Switched to ${auth.isAdmin ? 'Administrator' : 'Agent'} role',
+                    ),
+                  ),
+                );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryPurple,
-            ),
-            child: Text(
-              'Switch to ${authProvider.isAdmin ? "Agent" : "Admin"}',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _checkForUpdates(
-    BuildContext context,
-    AuthProvider authProvider,
-  ) async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Card(
-          margin: const EdgeInsets.all(24),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppTheme.primaryPurple),
-                const SizedBox(height: 16),
-                Text('Checking for updates...'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      final updateInfo = await UpdateService.checkForUpdate();
-
-      if (!context.mounted) return;
-      Navigator.pop(context); // Close loading dialog
-
-      if (updateInfo != null) {
-        await UpdateService.showUpdateDialog(context, updateInfo);
-      } else {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.check_circle, color: AppTheme.successGreen),
-                const SizedBox(width: 8),
-                const Text('Up to Date'),
-              ],
-            ),
-            content: const Text(
-              'You\'re running the latest version of Mission Board (v1.2.0)!',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // Close loading dialog
-
-      context.showError('Failed to check for updates. Please try again later.');
-    }
-  }
-
-  void _showDeleteAccountDialog(
-    BuildContext context,
-    AuthProvider authProvider,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.grey800,
-        title: Text(
-          'Delete Account',
-          style: TextStyle(color: AppTheme.errorRed),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: AppTheme.errorRed,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'This action cannot be undone. All your missions, points, and achievements will be permanently deleted.',
-              style: TextStyle(color: AppTheme.grey400, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.showInfo('Account deletion feature coming soon!');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
-            child: const Text('Delete Account'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ThemeSelector extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: themeProvider.availableThemes.map((theme) {
-          final isSelected = themeProvider.currentTheme == theme['mode'];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: AppTheme.grey900,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? AppTheme.primaryPurple : AppTheme.grey700,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: ListTile(
-              leading: Icon(
-                theme['icon'] as IconData,
-                color: isSelected ? AppTheme.primaryPurple : AppTheme.grey400,
-              ),
-              title: Text(
-                theme['name'] as String,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppTheme.grey200,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              subtitle: Text(
-                theme['description'] as String,
-                style: TextStyle(color: AppTheme.grey400, fontSize: 12),
-              ),
-              trailing: isSelected
-                  ? Icon(Icons.check_circle, color: AppTheme.primaryPurple)
-                  : null,
-              onTap: () => themeProvider.setThemeMode(theme['mode'] as AppThemeMode),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _DemoDataSection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.grey900,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.grey700),
-      ),
-      child: Column(
-        children: [
-          ListTile(
-            leading: Icon(Icons.group_outlined, color: AppTheme.infoBlue),
-            title: const Text('Load Demo Leaderboard'),
-            subtitle: Text(
-              '5 demo users with rankings',
-              style: TextStyle(fontSize: 12, color: AppTheme.grey400),
-            ),
-            trailing: const Icon(Icons.arrow_forward, size: 20),
-            onTap: () async {
-              try {
-                await DemoDataHelper.populateDemoLeaderboard();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('✅ Demo leaderboard loaded!'),
-                      backgroundColor: AppTheme.successGreen,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('❌ Error: \$e'),
-                      backgroundColor: AppTheme.errorRed,
-                    ),
-                  );
-                }
-              }
-            },
+            child: const Text('Switch'),
           ),
         ],
       ),
@@ -642,22 +392,36 @@ class _DemoDataSection extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-
   const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppTheme.grey400,
-          letterSpacing: 0.5,
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ThemeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
     );
   }
 }

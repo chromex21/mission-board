@@ -99,12 +99,7 @@ class MessageBubble extends StatelessWidget {
           if (!isOwnMessage) ...[
             CircleAvatar(
               radius: 16,
-              backgroundImage: message.userPhotoUrl != null
-                  ? NetworkImage(message.userPhotoUrl!)
-                  : null,
-              child: message.userPhotoUrl == null
-                  ? Text(message.userName[0].toUpperCase())
-                  : null,
+              child: Text(message.userName[0].toUpperCase()),
             ),
             const SizedBox(width: 8),
           ],
@@ -215,7 +210,7 @@ class MessageBubble extends StatelessWidget {
                     Text(
                       DateFormat('HH:mm').format(message.createdAt),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 10,
                       ),
                     ),
@@ -228,12 +223,7 @@ class MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
-              backgroundImage: message.userPhotoUrl != null
-                  ? NetworkImage(message.userPhotoUrl!)
-                  : null,
-              child: message.userPhotoUrl == null
-                  ? Text(message.userName[0].toUpperCase())
-                  : null,
+              child: Text(message.userName[0].toUpperCase()),
             ),
           ],
         ],

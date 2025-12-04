@@ -25,6 +25,7 @@ class _AppSidebarState extends State<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final authProvider = Provider.of<AuthProvider>(context);
     final isAdmin = authProvider.isAdmin;
 
@@ -32,7 +33,8 @@ class _AppSidebarState extends State<AppSidebar> {
       duration: const Duration(milliseconds: 200),
       width: _isExpanded ? 240 : 72,
       decoration: BoxDecoration(
-        color: AppTheme.grey900,
+        color:
+            Theme.of(context).drawerTheme.backgroundColor ?? AppTheme.grey900,
         border: Border(right: BorderSide(color: AppTheme.grey800, width: 1)),
       ),
       child: Column(
@@ -58,10 +60,7 @@ class _AppSidebarState extends State<AppSidebar> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [
-                                AppTheme.primaryPurple,
-                                AppTheme.infoBlue,
-                              ],
+                              colors: [primary, primary.withValues(alpha: 0.7)],
                             ),
                           ),
                           child: const Icon(
@@ -94,7 +93,7 @@ class _AppSidebarState extends State<AppSidebar> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
-                            colors: [AppTheme.primaryPurple, AppTheme.infoBlue],
+                            colors: [primary, primary.withValues(alpha: 0.7)],
                           ),
                         ),
                         child: const Icon(
@@ -142,12 +141,6 @@ class _AppSidebarState extends State<AppSidebar> {
                   activeIcon: Icons.feed,
                   label: 'Mission Feed',
                   route: '/mission-feed',
-                ),
-                _buildNavItem(
-                  icon: Icons.store_outlined,
-                  activeIcon: Icons.store,
-                  label: 'Marketplace',
-                  route: '/mission-marketplace',
                 ),
                 _buildNavItem(
                   icon: Icons.dashboard_outlined,
@@ -270,20 +263,22 @@ class _AppSidebarState extends State<AppSidebar> {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+                          color: primary.withValues(alpha: 0.2),
                         ),
                         child: authProvider.appUser?.photoURL != null
                             ? ClipOval(
                                 child: Image.network(
                                   authProvider.appUser!.photoURL!,
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.person,
+                                        color: primary,
+                                        size: 20,
+                                      ),
                                 ),
                               )
-                            : Icon(
-                                Icons.person,
-                                color: AppTheme.primaryPurple,
-                                size: 20,
-                              ),
+                            : Icon(Icons.person, color: primary, size: 20),
                       )
                     else
                       Center(
@@ -292,15 +287,9 @@ class _AppSidebarState extends State<AppSidebar> {
                           height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppTheme.primaryPurple.withValues(
-                              alpha: 0.2,
-                            ),
+                            color: primary.withValues(alpha: 0.2),
                           ),
-                          child: Icon(
-                            Icons.person,
-                            color: AppTheme.primaryPurple,
-                            size: 18,
-                          ),
+                          child: Icon(Icons.person, color: primary, size: 18),
                         ),
                       ),
                     if (_isExpanded) ...[
@@ -417,32 +406,40 @@ class _AppSidebarState extends State<AppSidebar> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isActive ? activeIcon : icon,
-                color: isActive ? AppTheme.primaryPurple : AppTheme.grey400,
-                size: 22,
-              ),
-              if (_isExpanded) ...[
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isActive ? Colors.white : AppTheme.grey400,
-                      fontSize: 14,
-                      fontWeight: isActive
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+          child: _isExpanded
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isActive ? activeIcon : icon,
+                      color: isActive
+                          ? AppTheme.primaryPurple
+                          : AppTheme.grey400,
+                      size: 22,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isActive ? Colors.white : AppTheme.grey400,
+                          fontSize: 14,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              : Center(
+                  child: Icon(
+                    isActive ? activeIcon : icon,
+                    color: isActive ? AppTheme.primaryPurple : AppTheme.grey400,
+                    size: 22,
                   ),
                 ),
-              ],
-            ],
-          ),
         ),
       ),
     );
@@ -473,79 +470,138 @@ class _AppSidebarState extends State<AppSidebar> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: Stack(
-                  clipBehavior: Clip.none,
+          child: _isExpanded
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      isActive ? activeIcon : icon,
-                      color: isActive
-                          ? AppTheme.primaryPurple
-                          : AppTheme.grey400,
-                      size: 22,
-                    ),
-                    // Badge for unread notifications
-                    Consumer<NotificationProvider>(
-                      builder: (context, notificationProvider, _) {
-                        final unreadCount = notificationProvider.unreadCount;
-                        if (unreadCount == 0) return const SizedBox.shrink();
-
-                        return Positioned(
-                          right: -8,
-                          top: -8,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.errorRed,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppTheme.grey900,
-                                width: 1,
-                              ),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: FittedBox(
-                              child: Text(
-                                unreadCount > 9 ? '9+' : '$unreadCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            isActive ? activeIcon : icon,
+                            color: isActive
+                                ? AppTheme.primaryPurple
+                                : AppTheme.grey400,
+                            size: 22,
                           ),
-                        );
-                      },
+                          // Badge for unread notifications
+                          Consumer<NotificationProvider>(
+                            builder: (context, notificationProvider, _) {
+                              final unreadCount =
+                                  notificationProvider.unreadCount;
+                              if (unreadCount == 0)
+                                return const SizedBox.shrink();
+
+                              return Positioned(
+                                right: -8,
+                                top: -8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.errorRed,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppTheme.grey900,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: FittedBox(
+                                    child: Text(
+                                      unreadCount > 9 ? '9+' : '$unreadCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: isActive ? Colors.white : AppTheme.grey400,
+                          fontSize: 14,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
-                ),
-              ),
-              if (_isExpanded) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isActive ? Colors.white : AppTheme.grey400,
-                      fontSize: 14,
-                      fontWeight: isActive
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+                )
+              : Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          isActive ? activeIcon : icon,
+                          color: isActive
+                              ? AppTheme.primaryPurple
+                              : AppTheme.grey400,
+                          size: 22,
+                        ),
+                        // Badge for unread notifications
+                        Consumer<NotificationProvider>(
+                          builder: (context, notificationProvider, _) {
+                            final unreadCount =
+                                notificationProvider.unreadCount;
+                            if (unreadCount == 0)
+                              return const SizedBox.shrink();
+
+                            return Positioned(
+                              right: -6,
+                              top: -6,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.errorRed,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppTheme.grey900,
+                                    width: 1,
+                                  ),
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 14,
+                                  minHeight: 14,
+                                ),
+                                child: FittedBox(
+                                  child: Text(
+                                    unreadCount > 9 ? '9+' : '$unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ],
-          ),
         ),
       ),
     );

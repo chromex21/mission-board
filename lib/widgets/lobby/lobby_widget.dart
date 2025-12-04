@@ -133,7 +133,7 @@ class _LobbyWidgetState extends State<LobbyWidget> {
       try {
         await File(filePath).delete();
       } catch (e) {
-        print('Error deleting temp file: $e');
+        debugPrint('Error deleting temp file: $e');
       }
 
       // Send message

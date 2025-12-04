@@ -5,6 +5,7 @@ import '../../models/mission_activity_model.dart';
 import '../../providers/mission_feed_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/layout/app_layout.dart';
+import '../../utils/responsive_helper.dart';
 
 class MissionFeedView extends StatefulWidget {
   final Function(String)? onNavigate;
@@ -51,7 +52,9 @@ class _MissionFeedViewState extends State<MissionFeedView> {
         builder: (context, feedProvider, child) {
           if (feedProvider.isLoading && feedProvider.activities.isEmpty) {
             return Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryPurple),
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
             );
           }
 
@@ -76,12 +79,16 @@ class _MissionFeedViewState extends State<MissionFeedView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.feed_outlined, size: 64, color: AppTheme.grey600),
+                  Icon(
+                    Icons.feed_outlined,
+                    size: 64,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No activities yet',
                     style: TextStyle(
-                      color: AppTheme.grey400,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
@@ -89,21 +96,9 @@ class _MissionFeedViewState extends State<MissionFeedView> {
                   const SizedBox(height: 8),
                   Text(
                     'Complete missions to see activity here',
-                    style: TextStyle(color: AppTheme.grey600, fontSize: 14),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await feedProvider.populateDummyData();
-                    },
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Load Demo Data'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryPurple,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -115,15 +110,22 @@ class _MissionFeedViewState extends State<MissionFeedView> {
             onRefresh: () async {
               feedProvider.listenToActivities();
             },
-            color: AppTheme.primaryPurple,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              itemCount: feedProvider.activities.length,
-              itemBuilder: (context, index) {
-                final activity = feedProvider.activities[index];
-                return _ActivityCard(activity: activity);
-              },
+            color: Theme.of(context).colorScheme.primary,
+            child: Center(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: AppSizing.maxContentWidth(context),
+                ),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  itemCount: feedProvider.activities.length,
+                  itemBuilder: (context, index) {
+                    final activity = feedProvider.activities[index];
+                    return _ActivityCard(activity: activity);
+                  },
+                ),
+              ),
             ),
           );
         },
@@ -146,9 +148,9 @@ class _ActivityCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.grey800,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.grey700),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,19 +171,14 @@ class _ActivityCard extends StatelessWidget {
                   },
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppTheme.primaryPurple,
-                    backgroundImage: activity.userAvatar != null
-                        ? NetworkImage(activity.userAvatar!)
-                        : null,
-                    child: activity.userAvatar == null
-                        ? Text(
-                            activity.userName[0].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text(
+                      activity.userName[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -200,7 +197,10 @@ class _ActivityCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         _formatTimestamp(activity.timestamp),
-                        style: TextStyle(color: AppTheme.grey400, fontSize: 12),
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -234,7 +234,10 @@ class _ActivityCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${activity.likedBy.length}',
-                        style: TextStyle(color: AppTheme.grey400, fontSize: 14),
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -245,12 +248,15 @@ class _ActivityCard extends StatelessWidget {
                     Icon(
                       Icons.comment_outlined,
                       size: 20,
-                      color: AppTheme.grey400,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '${activity.commentCount}',
-                      style: TextStyle(color: AppTheme.grey400, fontSize: 14),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -312,14 +318,16 @@ class _MissionCompletedCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryPurple.withOpacity(0.1),
-            AppTheme.infoBlue.withOpacity(0.1),
+            AppTheme.primaryPurple.withValues(alpha: 0.1),
+            AppTheme.infoBlue.withValues(alpha: 0.1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryPurple.withOpacity(0.3)),
+        border: Border.all(
+          color: AppTheme.primaryPurple.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +349,10 @@ class _MissionCompletedCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             missionTitle,
-            style: TextStyle(color: AppTheme.grey200, fontSize: 15),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 15,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -381,19 +392,21 @@ class _PaymentReceivedCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.successGreen.withOpacity(0.1),
-            AppTheme.warningOrange.withOpacity(0.1),
+            AppTheme.successGreen.withValues(alpha: 0.1),
+            AppTheme.warningOrange.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.successGreen.withOpacity(0.3)),
+        border: Border.all(
+          color: AppTheme.warningOrange.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.successGreen.withOpacity(0.2),
+              color: AppTheme.successGreen.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -464,7 +477,7 @@ class _LevelUpCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -495,7 +508,7 @@ class _LevelUpCard extends StatelessWidget {
                 Text(
                   'Total XP: $totalXP',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                 ),
@@ -522,9 +535,11 @@ class _MilestoneCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.grey700,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.warningOrange.withOpacity(0.5)),
+        border: Border.all(
+          color: AppTheme.warningOrange.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -571,7 +586,7 @@ class _DefaultCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         'Activity: ${activity.type.name}',
-        style: TextStyle(color: AppTheme.grey200),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
       ),
     );
   }
@@ -593,9 +608,9 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

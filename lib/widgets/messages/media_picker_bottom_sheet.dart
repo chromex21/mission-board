@@ -132,18 +132,18 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Trending GIFs response: ${data.keys}');
+        debugPrint('Trending GIFs response: ${data.keys}');
         if (data['results'] != null) {
           final results = List<Map<String, dynamic>>.from(data['results']);
-          print('Got ${results.length} trending GIFs');
+          debugPrint('Got ${results.length} trending GIFs');
           if (results.isNotEmpty) {
-            print('First GIF keys: ${results.first.keys}');
+            debugPrint('First GIF keys: ${results.first.keys}');
             if (results.first['media_formats'] != null) {
               final mf = results.first['media_formats'] as Map;
-              print('ALL TRENDING FORMATS AVAILABLE: ${mf.keys}');
+              debugPrint('ALL TRENDING FORMATS AVAILABLE: ${mf.keys}');
               mf.forEach((format, data) {
                 if (data is Map && data['url'] != null) {
-                  print('  $format: ${data['url']}');
+                  debugPrint('  $format: ${data['url']}');
                 }
               });
             }
@@ -153,15 +153,15 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
             _isLoadingGifs = false;
           });
         } else {
-          print('No results in trending response');
+          debugPrint('No results in trending response');
           setState(() => _isLoadingGifs = false);
         }
       } else {
-        print('Trending API error: ${response.statusCode}');
+        debugPrint('Trending API error: ${response.statusCode}');
         setState(() => _isLoadingGifs = false);
       }
     } catch (e) {
-      print('Error loading trending GIFs: $e');
+      debugPrint('Error loading trending GIFs: $e');
       setState(() => _isLoadingGifs = false);
     }
   }
@@ -186,18 +186,18 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('Search GIFs response for "$query": ${data.keys}');
+        debugPrint('Search GIFs response for "$query": ${data.keys}');
         if (data['results'] != null) {
           final results = List<Map<String, dynamic>>.from(data['results']);
-          print('Got ${results.length} search results');
+          debugPrint('Got ${results.length} search results');
           if (results.isNotEmpty) {
-            print('First result keys: ${results.first.keys}');
+            debugPrint('First result keys: ${results.first.keys}');
             if (results.first['media_formats'] != null) {
               final mf = results.first['media_formats'] as Map;
-              print('ALL SEARCH FORMATS AVAILABLE: ${mf.keys}');
+              debugPrint('ALL SEARCH FORMATS AVAILABLE: ${mf.keys}');
               mf.forEach((format, data) {
                 if (data is Map && data['url'] != null) {
-                  print('  $format: ${data['url']}');
+                  debugPrint('  $format: ${data['url']}');
                 }
               });
             }
@@ -207,18 +207,20 @@ class _MediaPickerBottomSheetState extends State<MediaPickerBottomSheet>
             _isLoadingGifs = false;
           });
         } else {
-          print('No results for search query: $query');
+          debugPrint('No results for search query: $query');
           setState(() {
             _gifResults = [];
             _isLoadingGifs = false;
           });
         }
       } else {
-        print('Search API error: ${response.statusCode} - ${response.body}');
+        debugPrint(
+          'Search API error: ${response.statusCode} - ${response.body}',
+        );
         setState(() => _isLoadingGifs = false);
       }
     } catch (e) {
-      print('Error searching GIFs: $e');
+      debugPrint('Error searching GIFs: $e');
       setState(() => _isLoadingGifs = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

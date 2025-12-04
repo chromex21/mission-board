@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../views/worker/mission_board_screen.dart';
 import '../views/worker/history_screen.dart';
 import '../views/worker/create_personal_mission_screen.dart';
 import '../views/worker/mission_feed_view.dart';
-import '../views/worker/mission_marketplace_view.dart';
+import '../views/worker/missions_dashboard_view.dart';
 import '../views/worker/create_mission_view.dart';
-import '../views/admin/create_mission_screen.dart';
 import '../views/admin/create_team_mission_screen.dart';
 import '../views/admin/admin_panel_screen.dart';
 import '../views/common/login_screen.dart';
@@ -22,10 +20,9 @@ import '../models/mission_model.dart';
 
 class AppRoutes {
   static const String login = '/login';
-  static const String missionBoard = '/missions';
+  static const String missionBoard = '/missions'; // Now unified dashboard
   static const String missionHistory = '/missions/history';
   static const String missionFeed = '/mission-feed';
-  static const String missionMarketplace = '/mission-marketplace';
   static const String createMission = '/create-mission';
   static const String createTeamMission = '/create-team-mission';
   static const String createPersonalMission = '/create-personal-mission';
@@ -52,15 +49,11 @@ class AppRoutes {
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
       case AppRoutes.missionBoard:
-        return MaterialPageRoute(builder: (_) => const MissionBoardScreen());
+        return MaterialPageRoute(builder: (_) => const MissionsDashboardView());
       case AppRoutes.missionHistory:
         return MaterialPageRoute(builder: (_) => const HistoryScreen());
       case AppRoutes.missionFeed:
         return MaterialPageRoute(builder: (_) => const MissionFeedView());
-      case AppRoutes.missionMarketplace:
-        return MaterialPageRoute(
-          builder: (_) => const MissionMarketplaceView(),
-        );
       case AppRoutes.createMission:
         return MaterialPageRoute(builder: (_) => const CreateMissionView());
       case AppRoutes.createTeamMission:
@@ -85,6 +78,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());
       case AppRoutes.achievements:
         return MaterialPageRoute(builder: (_) => const AchievementsScreen());
+      case '/mission-details':
       case AppRoutes.missionDetail:
         final mission = routeSettings.arguments as Mission;
         return MaterialPageRoute(

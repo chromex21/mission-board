@@ -76,7 +76,6 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       ),
       body: Column(
         children: [
-          // Messages list
           Expanded(
             child: StreamBuilder<List<Message>>(
               stream: messagingProvider.streamMessages(widget.conversationId),
@@ -131,39 +130,39 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 }
 
                 final messages = snapshot.data ?? [];
-
-                if (messages.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No messages yet. Say hi!',
-                      style: TextStyle(color: AppTheme.grey400),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.senderId == currentUser.uid;
-
-                    return _buildMessageBubble(message, isMe);
-                  },
-                );
+                return _buildMessagesBody(messages, currentUser.uid);
               },
             ),
           ),
 
-          // Rich message input with image/emoji support
           RichMessageInput(
             conversationId: widget.conversationId,
             recipientId: widget.otherUserId,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessagesBody(List<Message> messages, String currentUserId) {
+    if (messages.isEmpty) {
+      return Center(
+        child: Text(
+          'No messages yet. Say hi!',
+          style: TextStyle(color: AppTheme.grey400),
+        ),
+      );
+    }
+    return ListView.builder(
+      controller: _scrollController,
+      reverse: true,
+      padding: const EdgeInsets.all(16),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[index];
+        final isMe = message.senderId == currentUserId;
+        return _buildMessageBubble(message, isMe);
+      },
     );
   }
 
@@ -202,7 +201,6 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                 ),
               ),
 
-            // Message content based on type
             if (message.type == MessageType.text)
               Text(message.content, style: const TextStyle(fontSize: 14))
             else if (message.type == MessageType.image ||

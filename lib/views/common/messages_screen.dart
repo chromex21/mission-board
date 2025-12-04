@@ -79,7 +79,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         isIndexError
                             ? 'The database is building an index for messages.\nThis usually takes 2-5 minutes.\nPlease check back shortly!'
                             : errorMsg,
-                        style: TextStyle(fontSize: 14, color: AppTheme.grey400),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       if (isIndexError) ...[
@@ -91,7 +94,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           icon: const Icon(Icons.refresh),
                           label: const Text('Retry'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryPurple,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -104,92 +109,92 @@ class _MessagesScreenState extends State<MessagesScreen> {
             final conversations = snapshot.data ?? [];
 
             if (conversations.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppTheme.primaryPurple.withValues(alpha: 0.2),
-                              AppTheme.infoBlue.withValues(alpha: 0.2),
-                            ],
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: AppTheme.primaryPurple,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'No Messages Yet',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Your direct messages will appear here',
-                        style: TextStyle(fontSize: 16, color: AppTheme.grey400),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppTheme.grey900,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.grey700),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  size: 20,
-                                  color: AppTheme.infoBlue,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'How to start a conversation',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.infoBlue,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTipItem('1', 'Go to Leaderboard or Teams'),
-                            _buildTipItem('2', 'Click on a user\'s profile'),
-                            _buildTipItem('3', 'Click "Send Message"'),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Chat privately with teammates about missions!',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.grey400,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryPurple.withValues(alpha: 0.2),
+                            AppTheme.infoBlue.withValues(alpha: 0.2),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                      child: Icon(
+                        Icons.chat_bubble_outline,
+                        size: 64,
+                        color: AppTheme.primaryPurple,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'No Messages Yet',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your direct messages will appear here',
+                      style: TextStyle(fontSize: 16, color: AppTheme.grey400),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppTheme.grey900,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.grey700),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 20,
+                                color: AppTheme.infoBlue,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'How to start a conversation',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.infoBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTipItem('1', 'Go to Leaderboard or Teams'),
+                          _buildTipItem('2', 'Click on a user\'s profile'),
+                          _buildTipItem('3', 'Click "Send Message"'),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Chat privately with teammates about missions!',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.grey400,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               );
             }

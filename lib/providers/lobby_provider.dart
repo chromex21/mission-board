@@ -18,33 +18,33 @@ class LobbyProvider extends ChangeNotifier {
         .limit(100)
         .snapshots()
         .handleError((error) {
-          print('❌ Lobby stream error: $error');
+          debugPrint('❌ Lobby stream error: $error');
           errorMessage = error.toString();
           notifyListeners();
         })
         .map((snapshot) {
           try {
-            print('📨 Processing ${snapshot.docs.length} lobby messages');
+            debugPrint('📨 Processing ${snapshot.docs.length} lobby messages');
             _messages = snapshot.docs
                 .map((doc) {
                   try {
                     final msg = LobbyMessage.fromFirestore(doc);
-                    print(
+                    debugPrint(
                       '✅ Parsed message ${doc.id}: ${msg.content.substring(0, msg.content.length > 20 ? 20 : msg.content.length)}...',
                     );
                     return msg;
                   } catch (e) {
-                    print('❌ Error parsing message ${doc.id}: $e');
-                    print('   Data: ${doc.data()}');
+                    debugPrint('❌ Error parsing message ${doc.id}: $e');
+                    debugPrint('   Data: ${doc.data()}');
                     return null;
                   }
                 })
                 .whereType<LobbyMessage>()
                 .toList();
-            print('✅ Returned ${_messages.length} valid messages');
+            debugPrint('✅ Returned ${_messages.length} valid messages');
             return _messages;
           } catch (e) {
-            print('❌ Error mapping snapshot: $e');
+            debugPrint('❌ Error mapping snapshot: $e');
             return <LobbyMessage>[];
           }
         });
@@ -162,7 +162,7 @@ class LobbyProvider extends ChangeNotifier {
 
       await docRef.update({'reactions': reactions});
     } catch (e) {
-      print('❌ Error toggling reaction: $e');
+      debugPrint('❌ Error toggling reaction: $e');
       errorMessage = e.toString();
       notifyListeners();
     }
@@ -187,10 +187,12 @@ class LobbyProvider extends ChangeNotifier {
 
       if (oldMessages.docs.isNotEmpty) {
         await batch.commit();
-        print('🗑️ Cleaned up ${oldMessages.docs.length} old lobby messages');
+        debugPrint(
+          '🗑️ Cleaned up ${oldMessages.docs.length} old lobby messages',
+        );
       }
     } catch (e) {
-      print('❌ Error cleaning up old messages: $e');
+      debugPrint('❌ Error cleaning up old messages: $e');
     }
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
 import '../navigation/app_sidebar.dart';
 import '../navigation/app_top_bar.dart';
 import '../../utils/responsive_helper.dart';
@@ -31,10 +30,10 @@ class AppLayout extends StatelessWidget {
     final showSidebar = AppBreakpoints.shouldShowSidebar(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.darkGrey,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: !showSidebar
           ? Drawer(
-              backgroundColor: AppTheme.darkGrey,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               child: AppSidebar(
                 currentRoute: currentRoute,
                 onNavigate: (route) {
@@ -66,7 +65,10 @@ class AppLayout extends StatelessWidget {
 
                 // Content
                 Expanded(
-                  child: Container(color: AppTheme.darkGrey, child: child),
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: child,
+                  ),
                 ),
               ],
             ),

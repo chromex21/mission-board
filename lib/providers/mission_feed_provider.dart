@@ -96,8 +96,8 @@ class MissionFeedProvider with ChangeNotifier {
     }
   }
 
-  // Populate dummy data for testing (TEMPORARY)
-  Future<void> populateDummyData() async {
+  // Production: remove demo population
+  /* Future<void> populateDummyData() async {
     final dummyUsers = [
       {'id': 'user1', 'name': 'Sarah Chen'},
       {'id': 'user2', 'name': 'Marcus Johnson'},
@@ -197,5 +197,5 @@ class MissionFeedProvider with ChangeNotifier {
       _error = e.toString();
       notifyListeners();
     }
-  }
+  } */
 }

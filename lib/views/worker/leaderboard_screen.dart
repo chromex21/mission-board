@@ -36,7 +36,9 @@ class LeaderboardScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'Loading leaderboard...',
-                      style: TextStyle(color: AppTheme.grey400),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
                     ),
                   ],
                 ),
@@ -48,38 +50,16 @@ class LeaderboardScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.error_outline,
-                      size: 64,
-                      color: AppTheme.errorRed,
+                      size: 48,
+                      color: Colors.red,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error Loading Leaderboard',
+                      'Error loading leaderboard',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.grey400,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        snapshot.error.toString(),
-                        style: TextStyle(fontSize: 12, color: AppTheme.grey200),
-                        textAlign: TextAlign.center,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryPurple,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
                   ],
@@ -92,11 +72,18 @@ class LeaderboardScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.leaderboard, size: 64, color: AppTheme.grey600),
+                    Icon(
+                      Icons.leaderboard,
+                      size: 64,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'No rankings yet',
-                      style: TextStyle(fontSize: 16, color: AppTheme.grey400),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
                     ),
                   ],
                 ),
@@ -182,6 +169,8 @@ class LeaderboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Local fallback removed for production
 
   Widget _buildPodium(List<AppUser> topThree) {
     return Container(

@@ -20,7 +20,6 @@ class VoiceNoteRecorder extends StatefulWidget {
 
 class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
   final AudioRecorder _audioRecorder = AudioRecorder();
-  bool _isRecording = false;
   int _recordDuration = 0;
   Timer? _timer;
   String? _recordingPath;
@@ -58,7 +57,6 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
         );
 
         setState(() {
-          _isRecording = true;
           _recordingPath = filePath;
         });
 

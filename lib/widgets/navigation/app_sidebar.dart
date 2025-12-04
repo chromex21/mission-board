@@ -492,8 +492,9 @@ class _AppSidebarState extends State<AppSidebar> {
                             builder: (context, notificationProvider, _) {
                               final unreadCount =
                                   notificationProvider.unreadCount;
-                              if (unreadCount == 0)
+                              if (unreadCount == 0) {
                                 return const SizedBox.shrink();
+                              }
 
                               return Positioned(
                                 right: -8,
@@ -564,8 +565,9 @@ class _AppSidebarState extends State<AppSidebar> {
                           builder: (context, notificationProvider, _) {
                             final unreadCount =
                                 notificationProvider.unreadCount;
-                            if (unreadCount == 0)
+                            if (unreadCount == 0) {
                               return const SizedBox.shrink();
+                            }
 
                             return Positioned(
                               right: -6,

@@ -69,13 +69,10 @@ class MyApp extends StatelessWidget {
             }
           }();
 
-          final themeMode = ThemeMode.dark; // Both themes use dark mode
-
           return MaterialApp(
             title: 'Mission Board',
             theme: themeData,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeMode,
+            themeMode: ThemeMode.dark,
             // Use a reactive home instead of initialRoute so it updates on auth changes
             home: auth.user == null
                 ? const LoginScreen()

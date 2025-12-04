@@ -105,6 +105,9 @@ class AuthProvider extends ChangeNotifier {
           .doc(credential.user!.uid)
           .set(newUser.toMap());
 
+      // Send email verification
+      await credential.user!.sendEmailVerification();
+
       // Persist login by default
       await _auth.setPersistence(Persistence.LOCAL);
     } on FirebaseAuthException catch (e) {

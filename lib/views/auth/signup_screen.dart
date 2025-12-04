@@ -718,6 +718,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   List<Map<String, String>> _getCountries() {
     return [
+      {'code': 'VC', 'name': 'St. Vincent and the Grenadines', 'flag': '🇻🇨'},
       {'code': 'US', 'name': 'United States', 'flag': '🇺🇸'},
       {'code': 'GB', 'name': 'United Kingdom', 'flag': '🇬🇧'},
       {'code': 'CA', 'name': 'Canada', 'flag': '🇨🇦'},
@@ -738,6 +739,11 @@ class _SignupScreenState extends State<SignupScreen> {
       {'code': 'AE', 'name': 'UAE', 'flag': '🇦🇪'},
       {'code': 'ZA', 'name': 'South Africa', 'flag': '🇿🇦'},
       {'code': 'AR', 'name': 'Argentina', 'flag': '🇦🇷'},
+      {'code': 'JM', 'name': 'Jamaica', 'flag': '🇯🇲'},
+      {'code': 'TT', 'name': 'Trinidad and Tobago', 'flag': '🇹🇹'},
+      {'code': 'BB', 'name': 'Barbados', 'flag': '🇧🇧'},
+      {'code': 'GD', 'name': 'Grenada', 'flag': '🇬🇩'},
+      {'code': 'LC', 'name': 'Saint Lucia', 'flag': '🇱🇨'},
     ];
   }
 }

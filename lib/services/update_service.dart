@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:io';
 import 'release_notes_service.dart';
 
@@ -17,7 +19,40 @@ class UpdateService {
       final currentVersion = packageInfo.version;
       final currentBuildNumber = int.parse(packageInfo.buildNumber);
 
-      // Get remote version from Firestore
+      // Try GitHub Releases API first (more reliable)
+      try {
+        final response = await http.get(
+          Uri.parse('https://api.github.com/repos/chromex21/mission-board/releases/latest'),
+        );
+        
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final remoteVersion = (data['tag_name'] as String).replaceAll('v', '');
+          final releaseNotes = data['body'] as String? ?? 'Update available';
+          final downloadUrl = data['assets']?.firstWhere(
+            (asset) => asset['name'].toString().endsWith('.apk'),
+            orElse: () => {'browser_download_url': ''},
+          )['browser_download_url'] as String? ?? '';
+          
+          // Parse version to build number (1.3.1 = 131)
+          final versionParts = remoteVersion.split('.');
+          final remoteBuildNumber = int.tryParse(versionParts.join()) ?? 0;
+          
+          if (remoteBuildNumber > currentBuildNumber && downloadUrl.isNotEmpty) {
+            return UpdateInfo(
+              currentVersion: currentVersion,
+              latestVersion: remoteVersion,
+              downloadUrl: downloadUrl,
+              releaseNotes: releaseNotes,
+              forceUpdate: false,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('GitHub API failed, falling back to Firestore: $e');
+      }
+
+      // Fallback to Firestore
       final doc = await FirebaseFirestore.instance
           .collection(_configCollection)
           .doc(_versionDoc)

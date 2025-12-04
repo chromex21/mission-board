@@ -40,6 +40,10 @@ class _MessagesScreenState extends State<MessagesScreen> {
         child: StreamBuilder<List<Conversation>>(
           stream: messagingProvider.streamConversations(currentUser.uid),
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
             if (snapshot.hasError) {
               final errorMsg = snapshot.error.toString();
               final isIndexError =

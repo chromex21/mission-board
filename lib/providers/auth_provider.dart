@@ -244,10 +244,10 @@ class AuthProvider extends ChangeNotifier {
 
       // Delete user data from Firestore
       final uid = user!.uid;
-      
+
       // Delete user document
       await _db.collection('users').doc(uid).delete();
-      
+
       // Delete user's missions
       final missionsSnapshot = await _db
           .collection('missions')
@@ -256,7 +256,7 @@ class AuthProvider extends ChangeNotifier {
       for (var doc in missionsSnapshot.docs) {
         await doc.reference.delete();
       }
-      
+
       // Delete user's messages
       final messagesSnapshot = await _db
           .collection('lobby_messages')
@@ -265,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
       for (var doc in messagesSnapshot.docs) {
         await doc.reference.delete();
       }
-      
+
       // Delete user's notifications
       final notificationsSnapshot = await _db
           .collection('users')
@@ -278,13 +278,15 @@ class AuthProvider extends ChangeNotifier {
 
       // Finally, delete Firebase Auth account
       await user!.delete();
-      
+
       debugPrint('✅ Account deleted successfully');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
         throw Exception('Incorrect password');
       } else if (e.code == 'requires-recent-login') {
-        throw Exception('Please log out and log in again before deleting your account');
+        throw Exception(
+          'Please log out and log in again before deleting your account',
+        );
       }
       throw Exception(e.message ?? 'Failed to delete account');
     } catch (e) {

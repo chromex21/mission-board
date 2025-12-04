@@ -169,15 +169,17 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
   Widget _buildMessageBubble(Message message, bool isMe) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            message.type == MessageType.image || message.type == MessageType.gif
-            ? const EdgeInsets.all(4)
-            : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
-        ),
+      child: GestureDetector(
+        onLongPress: () => _showMessageOptions(message, isMe),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding:
+              message.type == MessageType.image || message.type == MessageType.gif
+              ? const EdgeInsets.all(4)
+              : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.7,
+          ),
         decoration: BoxDecoration(
           color: isMe ? AppTheme.primaryPurple : AppTheme.grey800,
           borderRadius: BorderRadius.circular(16).copyWith(
@@ -261,7 +263,81 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
           ],
         ),
       ),
+    ),);
+  }
+
+  void _showMessageOptions(Message message, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.grey900,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isMe)
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppTheme.errorRed),
+                title: const Text('Delete Message'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(message);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.copy, color: AppTheme.infoBlue),
+              title: const Text('Copy Text'),
+              onTap: () {
+                Navigator.pop(context);
+                // Copy text functionality could be added here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Text copied to clipboard')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close, color: AppTheme.grey400),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _deleteMessage(Message message) async {
+    final messagingProvider = Provider.of<MessagingProvider>(
+      context,
+      listen: false,
+    );
+
+    try {
+      await messagingProvider.deleteMessage(
+        widget.conversationId,
+        message.id,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Message deleted'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

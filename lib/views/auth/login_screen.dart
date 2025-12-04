@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showForgotPasswordDialog() {
     final emailController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,7 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Enter your email address and we\'ll send you a password reset link.'),
+            const Text(
+              'Enter your email address and we\'ll send you a password reset link.',
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: emailController,
@@ -91,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 return;
               }
-              
+
               try {
                 final auth = Provider.of<AuthProvider>(context, listen: false);
                 await auth.sendPasswordReset(email);
@@ -99,7 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Password reset email sent! Check your inbox.'),
+                      content: Text(
+                        'Password reset email sent! Check your inbox.',
+                      ),
                       backgroundColor: AppTheme.successGreen,
                     ),
                   );
@@ -343,7 +347,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: _isLoading ? null : _showForgotPasswordDialog,
+                            onPressed: _isLoading
+                                ? null
+                                : _showForgotPasswordDialog,
                             child: Text(
                               'Forgot Password?',
                               style: TextStyle(

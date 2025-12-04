@@ -24,7 +24,14 @@ class FriendsProvider with ChangeNotifier {
     required String receiverId,
   }) async {
     try {
-      // Check if request already exists
+      // Check if they're already friends first
+      final user = await _firestore.collection('users').doc(senderId).get();
+      final friends = List<String>.from(user.data()?['friends'] ?? []);
+      if (friends.contains(receiverId)) {
+        throw Exception('You are already friends with this user');
+      }
+
+      // Check if request already exists (sent by you)
       final existing = await _firestore
           .collection('friendRequests')
           .where('senderId', isEqualTo: senderId)
@@ -33,14 +40,23 @@ class FriendsProvider with ChangeNotifier {
           .get();
 
       if (existing.docs.isNotEmpty) {
-        throw Exception('Friend request already sent');
+        throw Exception(
+          'Friend request already sent. Check your pending requests.',
+        );
       }
 
-      // Check if they're already friends
-      final user = await _firestore.collection('users').doc(senderId).get();
-      final friends = List<String>.from(user.data()?['friends'] ?? []);
-      if (friends.contains(receiverId)) {
-        throw Exception('Already friends');
+      // Check if they sent you a request (reverse)
+      final reverse = await _firestore
+          .collection('friendRequests')
+          .where('senderId', isEqualTo: receiverId)
+          .where('receiverId', isEqualTo: senderId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      if (reverse.docs.isNotEmpty) {
+        throw Exception(
+          'This user has already sent you a friend request! Check your notifications.',
+        );
       }
 
       // Create friend request

@@ -47,9 +47,7 @@ class _AppSidebarState extends State<AppSidebar> {
             height: 64,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: borderColor, width: 1),
-              ),
+              border: Border(bottom: BorderSide(color: borderColor, width: 1)),
             ),
             child: Row(
               children: [
@@ -252,9 +250,7 @@ class _AppSidebarState extends State<AppSidebar> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: borderColor, width: 1),
-              ),
+              border: Border(top: BorderSide(color: borderColor, width: 1)),
             ),
             child: Column(
               children: [

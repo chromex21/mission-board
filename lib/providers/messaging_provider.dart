@@ -192,6 +192,20 @@ class MessagingProvider with ChangeNotifier {
         });
   }
 
+  /// Delete a single message
+  Future<void> deleteMessage(String conversationId, String messageId) async {
+    try {
+      await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
   /// Delete conversation
   Future<void> deleteConversation(String conversationId) async {
     try {

@@ -9,6 +9,7 @@ import '../views/admin/create_team_mission_screen.dart';
 import '../views/admin/admin_panel_screen.dart';
 import '../views/common/login_screen.dart';
 import '../views/common/profile_screen.dart';
+import '../views/common/user_profile_screen.dart';
 import '../views/common/settings_screen.dart';
 import '../views/common/notifications_screen.dart';
 import '../views/team/teams_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String missionDetail = '/mission-detail';
   static const String adminPanel = '/admin';
   static const String profile = '/profile';
+  static const String userProfile = '/user-profile';
   static const String settings = '/settings';
   static const String teams = '/teams';
   static const String teamDetail = '/team';
@@ -43,6 +45,16 @@ class AppRoutes {
       return MaterialPageRoute(
         builder: (_) => TeamDetailScreen(teamId: teamId),
       );
+    }
+
+    // Handle user profile route with userId
+    if (routeSettings.name == AppRoutes.userProfile) {
+      final userId = routeSettings.arguments as String?;
+      if (userId != null) {
+        return MaterialPageRoute(
+          builder: (_) => UserProfileScreen(userId: userId),
+        );
+      }
     }
 
     switch (routeSettings.name) {

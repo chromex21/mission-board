@@ -22,23 +22,32 @@ class UpdateService {
       // Try GitHub Releases API first (more reliable)
       try {
         final response = await http.get(
-          Uri.parse('https://api.github.com/repos/chromex21/mission-board/releases/latest'),
+          Uri.parse(
+            'https://api.github.com/repos/chromex21/mission-board/releases/latest',
+          ),
         );
-        
+
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final remoteVersion = (data['tag_name'] as String).replaceAll('v', '');
+          final remoteVersion = (data['tag_name'] as String).replaceAll(
+            'v',
+            '',
+          );
           final releaseNotes = data['body'] as String? ?? 'Update available';
-          final downloadUrl = data['assets']?.firstWhere(
-            (asset) => asset['name'].toString().endsWith('.apk'),
-            orElse: () => {'browser_download_url': ''},
-          )['browser_download_url'] as String? ?? '';
-          
+          final downloadUrl =
+              data['assets']?.firstWhere(
+                    (asset) => asset['name'].toString().endsWith('.apk'),
+                    orElse: () => {'browser_download_url': ''},
+                  )['browser_download_url']
+                  as String? ??
+              '';
+
           // Parse version to build number (1.3.1 = 131)
           final versionParts = remoteVersion.split('.');
           final remoteBuildNumber = int.tryParse(versionParts.join()) ?? 0;
-          
-          if (remoteBuildNumber > currentBuildNumber && downloadUrl.isNotEmpty) {
+
+          if (remoteBuildNumber > currentBuildNumber &&
+              downloadUrl.isNotEmpty) {
             return UpdateInfo(
               currentVersion: currentVersion,
               latestVersion: remoteVersion,

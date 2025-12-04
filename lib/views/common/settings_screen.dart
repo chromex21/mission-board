@@ -145,7 +145,9 @@ class SettingsScreen extends StatelessWidget {
                       onPressed: () async {
                         await auth.signOut();
                         if (context.mounted) {
-                          Navigator.of(context).popUntil((route) => route.isFirst);
+                          Navigator.of(
+                            context,
+                          ).popUntil((route) => route.isFirst);
                         }
                       },
                       icon: const Icon(Icons.logout),
@@ -372,7 +374,7 @@ class SettingsScreen extends StatelessWidget {
 
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     final passwordController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -431,19 +433,18 @@ class SettingsScreen extends StatelessWidget {
                 );
                 return;
               }
-              
+
               try {
                 Navigator.pop(context);
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
-                
+
                 await auth.deleteAccount(password);
-                
+
                 if (context.mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -465,9 +466,7 @@ class SettingsScreen extends StatelessWidget {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorRed,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
             child: const Text('Delete Account'),
           ),
         ],

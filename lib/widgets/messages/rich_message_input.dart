@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
 import '../../models/conversation_model.dart';
+import 'media_picker_bottom_sheet.dart';
 
 class RichMessageInput extends StatefulWidget {
   final String conversationId;
@@ -124,6 +125,58 @@ class _RichMessageInputState extends State<RichMessageInput> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to pick file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickGif() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MediaPickerBottomSheet(
+        onMediaSelected: (url, type) async {
+          Navigator.pop(context);
+          await _sendGif(url);
+        },
+      ),
+    );
+  }
+
+  Future<void> _sendGif(String gifUrl) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final messagingProvider = Provider.of<MessagingProvider>(
+      context,
+      listen: false,
+    );
+    final currentUser = authProvider.appUser!;
+
+    try {
+      await messagingProvider.sendMessage(
+        conversationId: widget.conversationId,
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName ?? 'Unknown',
+        content: gifUrl,
+        participants: [currentUser.uid, widget.recipientId],
+        type: MessageType.gif,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('GIF sent successfully'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send GIF: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -260,6 +313,14 @@ class _RichMessageInputState extends State<RichMessageInput> {
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.gif, color: AppTheme.successGreen),
+                title: const Text('GIF'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickGif();
                 },
               ),
               ListTile(

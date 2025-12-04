@@ -25,7 +25,11 @@ class _AppSidebarState extends State<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final borderColor = theme.brightness == Brightness.dark
+        ? primary.withValues(alpha: 0.2)
+        : AppTheme.grey800;
     final authProvider = Provider.of<AuthProvider>(context);
     final isAdmin = authProvider.isAdmin;
 
@@ -33,9 +37,8 @@ class _AppSidebarState extends State<AppSidebar> {
       duration: const Duration(milliseconds: 200),
       width: _isExpanded ? 240 : 72,
       decoration: BoxDecoration(
-        color:
-            Theme.of(context).drawerTheme.backgroundColor ?? AppTheme.grey900,
-        border: Border(right: BorderSide(color: AppTheme.grey800, width: 1)),
+        color: theme.drawerTheme.backgroundColor ?? AppTheme.grey900,
+        border: Border(right: BorderSide(color: borderColor, width: 1)),
       ),
       child: Column(
         children: [
@@ -45,7 +48,7 @@ class _AppSidebarState extends State<AppSidebar> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: AppTheme.grey800, width: 1),
+                bottom: BorderSide(color: borderColor, width: 1),
               ),
             ),
             child: Row(
@@ -250,7 +253,7 @@ class _AppSidebarState extends State<AppSidebar> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: AppTheme.grey800, width: 1),
+                top: BorderSide(color: borderColor, width: 1),
               ),
             ),
             child: Column(
@@ -385,6 +388,8 @@ class _AppSidebarState extends State<AppSidebar> {
     required String route,
     bool hasSubItems = false,
   }) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
     final isActive =
         widget.currentRoute == route ||
         (hasSubItems && widget.currentRoute.startsWith(route));
@@ -402,7 +407,7 @@ class _AppSidebarState extends State<AppSidebar> {
           ),
           decoration: BoxDecoration(
             color: isActive
-                ? AppTheme.primaryPurple.withValues(alpha: 0.15)
+                ? primary.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -412,9 +417,7 @@ class _AppSidebarState extends State<AppSidebar> {
                   children: [
                     Icon(
                       isActive ? activeIcon : icon,
-                      color: isActive
-                          ? AppTheme.primaryPurple
-                          : AppTheme.grey400,
+                      color: isActive ? primary : AppTheme.grey400,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -436,8 +439,8 @@ class _AppSidebarState extends State<AppSidebar> {
               : Center(
                   child: Icon(
                     isActive ? activeIcon : icon,
-                    color: isActive ? AppTheme.primaryPurple : AppTheme.grey400,
-                    size: 22,
+                    color: isActive ? primary : AppTheme.grey400,
+                    size: 20,
                   ),
                 ),
         ),
@@ -451,6 +454,8 @@ class _AppSidebarState extends State<AppSidebar> {
     required String label,
     required String route,
   }) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
     final isActive = widget.currentRoute == route;
 
     return Tooltip(
@@ -466,7 +471,7 @@ class _AppSidebarState extends State<AppSidebar> {
           ),
           decoration: BoxDecoration(
             color: isActive
-                ? AppTheme.primaryPurple.withValues(alpha: 0.15)
+                ? primary.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -475,17 +480,15 @@ class _AppSidebarState extends State<AppSidebar> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 20,
+                      height: 20,
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
                           Icon(
                             isActive ? activeIcon : icon,
-                            color: isActive
-                                ? AppTheme.primaryPurple
-                                : AppTheme.grey400,
-                            size: 22,
+                            color: isActive ? primary : AppTheme.grey400,
+                            size: 20,
                           ),
                           // Badge for unread notifications
                           Consumer<NotificationProvider>(
@@ -548,17 +551,15 @@ class _AppSidebarState extends State<AppSidebar> {
                 )
               : Center(
                   child: SizedBox(
-                    width: 22,
-                    height: 22,
+                    width: 20,
+                    height: 20,
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
                         Icon(
                           isActive ? activeIcon : icon,
-                          color: isActive
-                              ? AppTheme.primaryPurple
-                              : AppTheme.grey400,
-                          size: 22,
+                          color: isActive ? primary : AppTheme.grey400,
+                          size: 20,
                         ),
                         // Badge for unread notifications
                         Consumer<NotificationProvider>(

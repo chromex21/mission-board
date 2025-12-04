@@ -97,9 +97,19 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isOwnMessage) ...[
-            CircleAvatar(
-              radius: 16,
-              child: Text(message.userName[0].toUpperCase()),
+            GestureDetector(
+              onTap: () {
+                // Navigate to user profile
+                Navigator.pushNamed(
+                  context,
+                  '/user-profile',
+                  arguments: message.userId,
+                );
+              },
+              child: CircleAvatar(
+                radius: 16,
+                child: Text(message.userName[0].toUpperCase()),
+              ),
             ),
             const SizedBox(width: 8),
           ],

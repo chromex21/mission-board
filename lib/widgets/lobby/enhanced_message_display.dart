@@ -149,8 +149,11 @@ class EnhancedMessageDisplay extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.broken_image,
-                              color: AppTheme.errorRed, size: 32),
+                          Icon(
+                            Icons.broken_image,
+                            color: AppTheme.errorRed,
+                            size: 32,
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             'Failed to load image',
@@ -172,15 +175,15 @@ class EnhancedMessageDisplay extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.broken_image,
-                                color: AppTheme.errorRed, size: 32),
+                            Icon(
+                              Icons.broken_image,
+                              color: AppTheme.errorRed,
+                              size: 32,
+                            ),
                             const SizedBox(height: 8),
                             const Text(
                               'Failed to load image',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 12,
-                              ),
+                              style: TextStyle(color: Colors.red, fontSize: 12),
                             ),
                           ],
                         ),
@@ -240,25 +243,22 @@ class EnhancedMessageDisplay extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.play_circle_filled,
-              color: AppTheme.primaryPurple, size: 24),
+          Icon(
+            Icons.play_circle_filled,
+            color: AppTheme.primaryPurple,
+            size: 24,
+          ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Voice message',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.grey200,
-                ),
+                style: TextStyle(fontSize: 12, color: AppTheme.grey200),
               ),
               Text(
                 '${message.voiceDuration ?? 0} sec',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppTheme.grey400,
-                ),
+                style: TextStyle(fontSize: 10, color: AppTheme.grey400),
               ),
             ],
           ),
@@ -302,20 +302,13 @@ class EnhancedMessageDisplay extends StatelessWidget {
                 ),
                 Text(
                   fileExtension,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.grey400,
-                  ),
+                  style: TextStyle(fontSize: 11, color: AppTheme.grey400),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            Icons.download,
-            color: AppTheme.primaryPurple,
-            size: 20,
-          ),
+          Icon(Icons.download, color: AppTheme.primaryPurple, size: 20),
         ],
       ),
     );
@@ -325,11 +318,7 @@ class EnhancedMessageDisplay extends StatelessWidget {
     final parts = message.content.split(' ');
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
-          fontSize: 13,
-          color: Colors.white,
-          height: 1.4,
-        ),
+        style: const TextStyle(fontSize: 13, color: Colors.white, height: 1.4),
         children: parts.map((part) {
           // Highlight mentions
           if (part.startsWith('@')) {
@@ -391,8 +380,10 @@ class EnhancedMessageDisplay extends StatelessWidget {
     if (reactions.isEmpty) return const SizedBox.shrink();
 
     final firstReaction = reactions.entries.first;
-    final totalReactions =
-        reactions.values.fold<int>(0, (sum, users) => sum + users.length);
+    final totalReactions = reactions.values.fold<int>(
+      0,
+      (sum, users) => sum + users.length,
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 4),
@@ -410,10 +401,7 @@ class EnhancedMessageDisplay extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               totalReactions.toString(),
-              style: TextStyle(
-                fontSize: 10,
-                color: AppTheme.grey400,
-              ),
+              style: TextStyle(fontSize: 10, color: AppTheme.grey400),
             ),
           ],
         ],

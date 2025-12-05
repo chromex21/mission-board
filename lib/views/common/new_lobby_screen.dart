@@ -10,7 +10,7 @@ import '../../utils/responsive_helper.dart';
 import '../../widgets/lobby/lobby_header.dart';
 import '../../widgets/lobby/lobby_card.dart';
 import '../../widgets/lobby/enhanced_message_display.dart';
-import '../../widgets/lobby/enhanced_message_input.dart';
+import '../../widgets/lobby/lobby_message_input.dart';
 import '../../widgets/layout/app_layout.dart';
 
 class NewLobbyScreen extends StatefulWidget {
@@ -401,12 +401,12 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final lobbyProvider = Provider.of<LobbyProvider>(context);
 
-    return EnhancedMessageInput(
-      onSendMessage: (content, messageType, filePath) {
+    return LobbyMessageInput(
+      onSendMessage: (content, messageType) {
         _sendMessage(
           content,
           messageType,
-          filePath,
+          null, // No file path for lobby messages
           authProvider,
           lobbyProvider,
         );

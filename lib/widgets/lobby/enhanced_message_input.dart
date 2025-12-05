@@ -13,7 +13,7 @@ import '../../core/theme/app_theme.dart';
 /// - Emoji picker
 class EnhancedMessageInput extends StatefulWidget {
   final Function(String content, String messageType, String? filePath)
-      onSendMessage;
+  onSendMessage;
   final bool canSendMessage;
   final Duration? cooldownRemaining;
 
@@ -42,8 +42,9 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
 
   Future<void> _pickImage() async {
     try {
-      final XFile? image =
-          await _imagePicker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (image != null) {
         setState(() => _selectedImagePath = image.path);
       }
@@ -74,11 +75,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
       if (result != null) {
         final fileName = result.files.single.name;
         if (widget.canSendMessage) {
-          widget.onSendMessage(
-            fileName,
-            'document',
-            result.files.single.path,
-          );
+          widget.onSendMessage(fileName, 'document', result.files.single.path);
         }
       }
     } catch (e) {
@@ -99,11 +96,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
     if (_selectedImagePath == null) return;
     if (!widget.canSendMessage) return;
 
-    widget.onSendMessage(
-      'Image shared',
-      'image',
-      _selectedImagePath,
-    );
+    widget.onSendMessage('Image shared', 'image', _selectedImagePath);
     setState(() => _selectedImagePath = null);
   }
 
@@ -191,20 +184,14 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
 
                   // GIF picker button
                   IconButton(
-                    icon: Icon(
-                      Icons.gif_box,
-                      color: AppTheme.grey400,
-                    ),
+                    icon: Icon(Icons.gif_box, color: AppTheme.grey400),
                     onPressed: _pickGif,
                     tooltip: 'GIF',
                   ),
 
                   // Document picker button
                   IconButton(
-                    icon: Icon(
-                      Icons.description,
-                      color: AppTheme.grey400,
-                    ),
+                    icon: Icon(Icons.description, color: AppTheme.grey400),
                     onPressed: _pickDocument,
                     tooltip: 'Document',
                   ),
@@ -229,8 +216,10 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide:
-                              BorderSide(color: AppTheme.primaryPurple, width: 2),
+                          borderSide: BorderSide(
+                            color: AppTheme.primaryPurple,
+                            width: 2,
+                          ),
                         ),
                         filled: true,
                         fillColor: AppTheme.grey900,
@@ -251,12 +240,13 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
                     IconButton(
                       icon: Icon(
                         Icons.send,
-                        color: widget.canSendMessage && _controller.text.isNotEmpty
+                        color:
+                            widget.canSendMessage && _controller.text.isNotEmpty
                             ? AppTheme.primaryPurple
                             : AppTheme.grey600,
                       ),
-                      onPressed: widget.canSendMessage &&
-                              _controller.text.isNotEmpty
+                      onPressed:
+                          widget.canSendMessage && _controller.text.isNotEmpty
                           ? _sendTextMessage
                           : null,
                       tooltip: _buildTooltip(),
@@ -269,8 +259,9 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput> {
                             ? AppTheme.successGreen
                             : AppTheme.grey600,
                       ),
-                      onPressed:
-                          widget.canSendMessage ? _sendImageMessage : null,
+                      onPressed: widget.canSendMessage
+                          ? _sendImageMessage
+                          : null,
                       tooltip: 'Send image',
                     ),
                 ],

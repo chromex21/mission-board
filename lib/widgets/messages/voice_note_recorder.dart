@@ -199,104 +199,118 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
     final progress = _recordDuration / maxDuration;
     final isNearMax = _recordDuration >= maxDuration - 5;
 
+    // Compact WhatsApp-style bubble
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: const BoxConstraints(maxWidth: 320),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.grey900,
-        border: Border(top: BorderSide(color: AppTheme.grey700)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.primaryPurple, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryPurple.withValues(alpha: 0.2),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Cancel button
-          IconButton(
-            icon: const Icon(Icons.close, color: AppTheme.errorRed),
-            onPressed: _cancelRecording,
-            tooltip: 'Cancel',
-          ),
-
-          const SizedBox(width: 12),
-
-          // Recording indicator
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: AppTheme.errorRed,
-              shape: BoxShape.circle,
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Progress and time
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recording...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      _formatDuration(_recordDuration),
-                      style: TextStyle(
-                        color: isNearMax
-                            ? AppTheme.warningOrange
-                            : Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+          // Pulsing red dot
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 800),
+            builder: (context, value, child) {
+              return Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorRed.withValues(alpha: 0.3 + (value * 0.7)),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: AppTheme.grey700,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isNearMax
-                          ? AppTheme.warningOrange
-                          : AppTheme.primaryPurple,
-                    ),
-                    minHeight: 4,
-                  ),
-                ),
-                if (isNearMax)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Max ${maxDuration}s',
-                      style: TextStyle(
-                        color: AppTheme.warningOrange,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-              ],
+              );
+            },
+            onEnd: () {
+              if (mounted) setState(() {});
+            },
+          ),
+
+          const SizedBox(width: 10),
+
+          // Time display
+          Text(
+            _formatDuration(_recordDuration),
+            style: TextStyle(
+              color: isNearMax ? AppTheme.warningOrange : Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
             ),
           ),
 
           const SizedBox(width: 12),
 
-          // Send button
+          // Minimal progress bar
           Container(
+            width: 60,
+            height: 3,
             decoration: BoxDecoration(
-              color: AppTheme.successGreen,
-              shape: BoxShape.circle,
+              color: AppTheme.grey700,
+              borderRadius: BorderRadius.circular(2),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: _recordDuration >= 1 ? _stopRecording : null,
-              tooltip: 'Send',
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isNearMax
+                      ? AppTheme.warningOrange
+                      : AppTheme.successGreen,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Cancel button (compact)
+          GestureDetector(
+            onTap: _cancelRecording,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.errorRed.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close,
+                color: AppTheme.errorRed,
+                size: 16,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Send button (compact)
+          GestureDetector(
+            onTap: _recordDuration >= 1 ? _stopRecording : null,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _recordDuration >= 1
+                    ? AppTheme.successGreen
+                    : AppTheme.grey700,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
           ),
         ],

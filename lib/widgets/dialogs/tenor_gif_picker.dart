@@ -162,62 +162,62 @@ class _TenorGifPickerState extends State<TenorGifPicker> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _gifResults.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No GIFs found',
-                            style: TextStyle(color: AppTheme.grey400),
-                          ),
-                        )
-                      : GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                  ? Center(
+                      child: Text(
+                        'No GIFs found',
+                        style: TextStyle(color: AppTheme.grey400),
+                      ),
+                    )
+                  : GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             crossAxisSpacing: 8,
                             mainAxisSpacing: 8,
                           ),
-                          itemCount: _gifResults.length,
-                          itemBuilder: (context, index) {
-                            final gif = _gifResults[index];
-                            final gifUrl = _getGifUrl(gif);
+                      itemCount: _gifResults.length,
+                      itemBuilder: (context, index) {
+                        final gif = _gifResults[index];
+                        final gifUrl = _getGifUrl(gif);
 
-                            if (gifUrl == null) return const SizedBox.shrink();
+                        if (gifUrl == null) return const SizedBox.shrink();
 
-                            return GestureDetector(
-                              onTap: () => Navigator.pop(context, gifUrl),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  gifUrl,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, progress) {
-                                    if (progress == null) return child;
-                                    return Container(
-                                      color: AppTheme.grey800,
-                                      child: const Center(
-                                        child: SizedBox(
-                                          width: 24,
-                                          height: 24,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
+                        return GestureDetector(
+                          onTap: () => Navigator.pop(context, gifUrl),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              gifUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Container(
+                                  color: AppTheme.grey800,
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
                                       ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: AppTheme.grey800,
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        color: AppTheme.grey600,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppTheme.grey800,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: AppTheme.grey600,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
 
             // Footer with Tenor attribution
@@ -227,10 +227,7 @@ class _TenorGifPickerState extends State<TenorGifPicker> {
               children: [
                 Text(
                   'Powered by',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.grey400,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppTheme.grey400),
                 ),
                 const SizedBox(width: 4),
                 const Text(

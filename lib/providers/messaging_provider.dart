@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mission_board/models/conversation_model.dart';
+import '../services/storage_service.dart';
 
 class MessagingProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final StorageService _storageService = StorageService();
 
   List<Conversation> _conversations = [];
   final Map<String, int> _totalUnreadCount = <String, int>{};

@@ -105,8 +105,10 @@ class _LobbyMessageInputState extends State<LobbyMessageInput> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide:
-                              BorderSide(color: AppTheme.primaryPurple, width: 2),
+                          borderSide: BorderSide(
+                            color: AppTheme.primaryPurple,
+                            width: 2,
+                          ),
                         ),
                         filled: true,
                         fillColor: AppTheme.grey900,
@@ -127,11 +129,15 @@ class _LobbyMessageInputState extends State<LobbyMessageInput> {
                   IconButton(
                     icon: Icon(
                       Icons.send,
-                      color: widget.canSendMessage && _controller.text.trim().isNotEmpty
+                      color:
+                          widget.canSendMessage &&
+                              _controller.text.trim().isNotEmpty
                           ? AppTheme.primaryPurple
                           : AppTheme.grey600,
                     ),
-                    onPressed: widget.canSendMessage && _controller.text.trim().isNotEmpty
+                    onPressed:
+                        widget.canSendMessage &&
+                            _controller.text.trim().isNotEmpty
                         ? _sendTextMessage
                         : null,
                     tooltip: _buildTooltip(),

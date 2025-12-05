@@ -227,7 +227,9 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: AppTheme.errorRed.withValues(alpha: 0.3 + (value * 0.7)),
+                  color: AppTheme.errorRed.withValues(
+                    alpha: 0.3 + (value * 0.7),
+                  ),
                   shape: BoxShape.circle,
                 ),
               );
@@ -285,11 +287,7 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
                 color: AppTheme.errorRed.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.close,
-                color: AppTheme.errorRed,
-                size: 16,
-              ),
+              child: Icon(Icons.close, color: AppTheme.errorRed, size: 16),
             ),
           ),
 
@@ -306,11 +304,7 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
                     : AppTheme.grey700,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: Icon(Icons.check, color: Colors.white, size: 16),
             ),
           ),
         ],

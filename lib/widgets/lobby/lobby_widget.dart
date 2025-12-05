@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -420,14 +419,13 @@ class _LobbyWidgetState extends State<LobbyWidget> {
                         ),
                         tooltip: 'Add media',
                       ),
-                      if (!kIsWeb)
-                        IconButton(
-                          onPressed: () {
-                            setState(() => _isRecordingVoice = true);
-                          },
-                          icon: Icon(Icons.mic, color: AppTheme.grey400),
-                          tooltip: 'Record voice note',
-                        ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() => _isRecordingVoice = true);
+                        },
+                        icon: Icon(Icons.mic, color: AppTheme.grey400),
+                        tooltip: 'Record voice note',
+                      ),
                       Expanded(
                         child: TextField(
                           controller: _messageController,

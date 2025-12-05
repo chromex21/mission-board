@@ -209,17 +209,10 @@ class EnhancedMessageDisplay extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 300, maxHeight: 250),
-              child: CachedNetworkImage(
-                imageUrl: message.content,
+              child: Image.network(
+                message.content,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: AppTheme.grey700,
-                  child: const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
+                gaplessPlayback: true,
               ),
             ),
           )

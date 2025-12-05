@@ -12,191 +12,159 @@ class LobbyCard extends StatelessWidget {
     super.key,
     required this.lobby,
     required this.onJoin,
-    this.isJoined = false,
+    required this.isJoined,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: AppTheme.grey900,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.grey900,
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isJoined
-              ? AppTheme.primaryPurple.withValues(alpha: 0.5)
-              : AppTheme.grey800,
-          width: isJoined ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: onJoin,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with icon and status
-              Row(
-                children: [
-                  // Icon
-                  if (lobby.iconEmoji != null)
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryPurple.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          lobby.iconEmoji!,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                    ),
-                  if (lobby.iconEmoji != null) const SizedBox(width: 12),
-
-                  // Name and activity
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lobby.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        _buildActivityIndicator(),
-                      ],
-                    ),
-                  ),
-
-                  // Join status badge
-                  if (isJoined)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successGreen.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: AppTheme.successGreen.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Text(
-                        'JOINED',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.successGreen,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Description
-              Text(
-                lobby.description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.grey200,
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Stats row
-              Row(
-                children: [
-                  // Online count
-                  _buildStat(
-                    Icons.circle,
-                    '${lobby.onlineCount} online',
-                    AppTheme.successGreen,
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Total members
-                  _buildStat(
-                    Icons.people,
-                    '${lobby.totalMembers} members',
-                    AppTheme.grey400,
-                  ),
-
-                  const Spacer(),
-
-                  // Join button
-                  if (!isJoined)
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryPurple,
-                            AppTheme.primaryPurple.withValues(alpha: 0.7),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: onJoin,
-                          borderRadius: BorderRadius.circular(8),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.login,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'JOIN',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+        border: Border.all(color: AppTheme.grey700),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lobby.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      _buildActivityIndicator(),
+                    ],
+                  ),
+                ),
+                if (isJoined)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppTheme.successGreen.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      'JOINED',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.successGreen,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Description
+            Text(
+              lobby.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.grey200,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stats row (wrap to avoid overflow on narrow widths)
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildStat(
+                  Icons.circle,
+                  '${lobby.onlineCount} online',
+                  AppTheme.successGreen,
+                ),
+                _buildStat(
+                  Icons.people,
+                  '${lobby.totalMembers} members',
+                  AppTheme.grey400,
+                ),
+                if (!isJoined)
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryPurple,
+                          AppTheme.primaryPurple.withValues(alpha: 0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onJoin,
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.login, size: 16, color: Colors.white),
+                              SizedBox(width: 6),
+                              Text(
+                                'JOIN',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildActivityIndicator() {
-    // Determine activity level based on online count
     final isActive = lobby.onlineCount >= 5;
     final activityText = isActive ? 'active now' : 'quiet';
     final activityColor = isActive ? AppTheme.successGreen : AppTheme.grey600;
@@ -226,6 +194,7 @@ class LobbyCard extends StatelessWidget {
 
   Widget _buildStat(IconData icon, String text, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),

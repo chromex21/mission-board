@@ -397,6 +397,25 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               )
                             : null,
                         onTap: () {
+                          final otherId =
+                              otherParticipant?['id'] ??
+                              conversation.participants.firstWhere(
+                                (p) => p != currentUser.uid,
+                                orElse: () => '',
+                              );
+
+                          if (otherId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Cannot open conversation: missing participant id.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -404,7 +423,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                 conversationId: conversation.id,
                                 otherUserName:
                                     otherParticipant?['name'] ?? 'Unknown User',
-                                otherUserId: otherParticipant?['id'] ?? '',
+                                otherUserId: otherId,
                               ),
                             ),
                           );

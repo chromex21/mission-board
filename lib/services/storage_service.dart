@@ -1,6 +1,6 @@
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 /// Service for uploading files to Firebase Storage
 /// Handles images, voice notes, documents, and other media
@@ -13,23 +13,13 @@ class StorageService {
     required String filePath,
     required String userId,
     String folder = 'messages',
+    Uint8List? data,
   }) async {
     try {
       final fileName = 'img_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child('$folder/$userId/$fileName');
 
-      UploadTask uploadTask;
-      if (kIsWeb) {
-        // For web, handle differently
-        final bytes = await File(filePath).readAsBytes();
-        uploadTask = ref.putData(
-          bytes,
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
-      } else {
-        // For mobile/desktop
-        uploadTask = ref.putFile(File(filePath));
-      }
+      UploadTask uploadTask = ref.putFile(File(filePath));
 
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
@@ -46,29 +36,16 @@ class StorageService {
     required String filePath,
     required String userId,
     required int duration,
+    Uint8List? data,
   }) async {
     try {
       final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
       final ref = _storage.ref().child('voice_notes/$userId/$fileName');
 
-      UploadTask uploadTask;
-      if (kIsWeb) {
-        final bytes = await File(filePath).readAsBytes();
-        uploadTask = ref.putData(
-          bytes,
-          SettableMetadata(
-            contentType: 'audio/mp4',
-            customMetadata: {'duration': duration.toString()},
-          ),
-        );
-      } else {
-        uploadTask = ref.putFile(
-          File(filePath),
-          SettableMetadata(
-            customMetadata: {'duration': duration.toString()},
-          ),
-        );
-      }
+      final uploadTask = ref.putFile(
+        File(filePath),
+        SettableMetadata(customMetadata: {'duration': duration.toString()}),
+      );
 
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
@@ -85,18 +62,15 @@ class StorageService {
     required String filePath,
     required String userId,
     required String fileName,
+    Uint8List? data,
   }) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final ref = _storage.ref().child('documents/$userId/${timestamp}_$fileName');
+      final ref = _storage.ref().child(
+        'documents/$userId/${timestamp}_$fileName',
+      );
 
-      UploadTask uploadTask;
-      if (kIsWeb) {
-        final bytes = await File(filePath).readAsBytes();
-        uploadTask = ref.putData(bytes);
-      } else {
-        uploadTask = ref.putFile(File(filePath));
-      }
+      UploadTask uploadTask = ref.putFile(File(filePath));
 
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
@@ -116,16 +90,7 @@ class StorageService {
     try {
       final ref = _storage.ref().child('profile_pictures/$userId.jpg');
 
-      UploadTask uploadTask;
-      if (kIsWeb) {
-        final bytes = await File(filePath).readAsBytes();
-        uploadTask = ref.putData(
-          bytes,
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
-      } else {
-        uploadTask = ref.putFile(File(filePath));
-      }
+      UploadTask uploadTask = ref.putFile(File(filePath));
 
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();

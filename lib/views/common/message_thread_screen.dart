@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
 import '../../providers/presence_provider.dart';
@@ -274,6 +276,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               RichMessageInput(
                 conversationId: widget.conversationId,
                 recipientId: widget.otherUserId,
+                replyingTo: _replyingTo,
+                onReplyCleared: () => setState(() => _replyingTo = null),
               ),
             ],
           ),
@@ -360,15 +364,31 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
 
   /// Extracts the URL from message content, handling caption format
   String _extractUrl(String content) {
-    // Handle caption format: "url|caption:text"
-    if (content.contains('|caption:')) {
-      return content.split('|caption:').first;
+    // First, strip caption if present (format: "url|caption:text")
+    final urlPart = content.contains('|caption:')
+        ? content.split('|caption:').first
+        : content;
+
+    // Now we have either:
+    // 1. A storage path: "messages/conversationId/timestamp_filename"
+    // 2. An HTTPS URL: "https://firebasestorage..."
+    // 3. Old format with colon: "gs://path:https://url"
+
+    // Handle old storage:url format
+    if (urlPart.contains(':https://')) {
+      final url = urlPart.split(':').skip(1).join(':');
+      debugPrint('[_extractUrl] old storage:url format → $url');
+      return url;
     }
-    return content;
+
+    debugPrint('[_extractUrl] plain URL/path → $urlPart');
+    return urlPart;
   }
 
   /// Extracts the caption from message content if present
   String? _extractCaption(String content) {
+    // Caption is stored as "url|caption:text" format
+    // Just extract the caption part directly
     if (content.contains('|caption:')) {
       final parts = content.split('|caption:');
       if (parts.length > 1) {
@@ -376,6 +396,190 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
       }
     }
     return null;
+  }
+
+  /// Download or open a file on Android (via system)
+  void _downloadFile(String url) {
+    // On Android, Firebase Storage paths are loaded via SDK
+    debugPrint('[_downloadFile] File download requested: $url');
+    // In a real implementation, would use url_launcher or a download manager
+  }
+
+  /// Build image widget that loads from Firebase Storage with authentication
+  /// Uses the storage path from message content to load with proper auth
+  String? _toStoragePath(String url) {
+    // Convert an HTTPS download URL into a storage path so we can generate a fresh token
+    if (!url.startsWith('https://firebasestorage')) return null;
+    try {
+      final uri = Uri.parse(url);
+      final oIndex = uri.pathSegments.indexOf('o');
+      if (oIndex != -1 && uri.pathSegments.length > oIndex + 1) {
+        final encodedPath = uri.pathSegments[oIndex + 1];
+        return Uri.decodeComponent(encodedPath);
+      }
+    } catch (_) {
+      // If parsing fails, fall back to treating it as a direct URL
+    }
+    return null;
+  }
+
+  Widget _buildAuthenticatedImage(String url) {
+    debugPrint('[_buildAuthenticatedImage] Loading: $url');
+
+    // Prefer treating any legacy HTTPS URL as a storage path to get a fresh token
+    final storagePath = _toStoragePath(url);
+    final targetPath =
+        storagePath ?? url; // if no conversion, assume it's already a path
+
+    debugPrint('[_buildAuthenticatedImage] Using storage path: $targetPath');
+    debugPrint(
+      '[_buildAuthenticatedImage] Detected storage path, loading with FirebaseStorage SDK',
+    );
+    debugPrint(
+      '[_buildAuthenticatedImage] Attempting to get download URL for authenticated access',
+    );
+
+    return FutureBuilder<String>(
+      future: FirebaseStorage.instance.ref(targetPath).getDownloadURL(),
+      builder: (context, urlSnapshot) {
+        if (urlSnapshot.hasError) {
+          debugPrint(
+            '[_buildAuthenticatedImage] Failed to get download URL for $targetPath: ${urlSnapshot.error}',
+          );
+          // Fallback: try getData() if getDownloadURL fails
+          debugPrint(
+            '[_buildAuthenticatedImage] Falling back to getData() method',
+          );
+          return FutureBuilder<Uint8List?>(
+            future: FirebaseStorage.instance
+                .ref(targetPath)
+                .getData(50 * 1024 * 1024),
+            builder: (context, dataSnapshot) {
+              if (dataSnapshot.hasData && dataSnapshot.data != null) {
+                debugPrint(
+                  '[_buildAuthenticatedImage] Successfully loaded image via getData() from path: $targetPath',
+                );
+                return Image.memory(
+                  dataSnapshot.data!,
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                );
+              } else if (dataSnapshot.hasError) {
+                debugPrint(
+                  '[_buildAuthenticatedImage] Failed getData() from Firebase Storage path $targetPath: ${dataSnapshot.error}',
+                );
+                return Container(
+                  height: 200,
+                  color: AppTheme.grey700,
+                  child: const Center(
+                    child: Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                );
+              }
+              debugPrint(
+                '[_buildAuthenticatedImage] Loading via getData() from path: $url',
+              );
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            },
+          );
+        }
+
+        if (urlSnapshot.hasData) {
+          debugPrint(
+            '[_buildAuthenticatedImage] Got download URL: ${urlSnapshot.data}',
+          );
+          debugPrint(
+            '[_buildAuthenticatedImage] Loading authenticated image from download URL',
+          );
+          return Image.network(
+            urlSnapshot.data!,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return SizedBox(
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint(
+                '[_buildAuthenticatedImage] Failed to load from authenticated download URL: $error',
+              );
+              return Container(
+                height: 200,
+                color: AppTheme.grey700,
+                child: const Center(
+                  child: Icon(Icons.broken_image, color: Colors.grey),
+                ),
+              );
+            },
+          );
+        }
+
+        debugPrint(
+          '[_buildAuthenticatedImage] Waiting for download URL from path: $url',
+        );
+        return const SizedBox(
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
+  }
+
+  /// Show image in full-screen viewer with download option
+  void _showImageViewer(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(ctx),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(ctx).size.width * 0.9,
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.8,
+                ),
+                color: Colors.black,
+                child: _buildAuthenticatedImage(imageUrl),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadFile(imageUrl),
+                    icon: const Icon(Icons.download),
+                    label: const Text('Download'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Close'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMessageBubble(Message message, bool isMe, String currentUserId) {
@@ -428,6 +632,8 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (message.replyTo != null)
+                    ReplyReferenceWidget(reply: message.replyTo!),
                   if (!isMe && message.type == MessageType.text)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
@@ -447,41 +653,16 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            _extractUrl(message.content),
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return SizedBox(
-                                height: 200,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                        : null,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: AppTheme.grey700,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              );
-                            },
+                        GestureDetector(
+                          onTap: () {
+                            final imageUrl = _extractUrl(message.content);
+                            _showImageViewer(context, imageUrl);
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _buildAuthenticatedImage(
+                              _extractUrl(message.content),
+                            ),
                           ),
                         ),
                         if (_extractCaption(message.content) != null) ...[
@@ -500,18 +681,45 @@ class _MessageThreadScreenState extends State<MessageThreadScreen> {
                       ],
                     ),
                   if (message.type == MessageType.file)
-                    Row(
-                      children: [
-                        const Icon(Icons.insert_drive_file, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'File attachment',
-                            style: const TextStyle(fontSize: 14),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                    GestureDetector(
+                      onTap: () async {
+                        final url = _extractUrl(message.content);
+                        // On web, trigger download by opening in new tab
+                        // On mobile, would use url_launcher
+                        try {
+                          // On Android, download file via system
+                          _downloadFile(url);
+                        } catch (e) {
+                          debugPrint('Error opening file: $e');
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                      ],
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blue[700] : AppTheme.grey700,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.download, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Download file',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   if (message.type == MessageType.voice)
                     Row(

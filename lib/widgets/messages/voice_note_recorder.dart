@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import '../../core/theme/app_theme.dart';
@@ -73,15 +72,10 @@ class _VoiceNoteRecorderState extends State<VoiceNoteRecorder> {
       if (await _audioRecorder.hasPermission()) {
         String filePath;
 
-        if (kIsWeb) {
-          // Web: use a web-friendly path
-          filePath = 'voice_note_${DateTime.now().millisecondsSinceEpoch}.webm';
-        } else {
-          // Mobile/Desktop: use system temp directory
-          final tempDir = Directory.systemTemp;
-          filePath =
-              '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        }
+        // Android: use system temp directory
+        final tempDir = Directory.systemTemp;
+        filePath =
+            '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
         await _audioRecorder.start(
           const RecordConfig(

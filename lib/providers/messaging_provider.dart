@@ -5,7 +5,7 @@ import '../services/storage_service.dart';
 
 class MessagingProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    final StorageService _storageService = StorageService();
+  final StorageService _storageService = StorageService();
 
   List<Conversation> _conversations = [];
   final Map<String, int> _totalUnreadCount = <String, int>{};
@@ -64,8 +64,15 @@ class MessagingProvider with ChangeNotifier {
     required String content,
     required List<String> participants,
     MessageType type = MessageType.text,
+    MessageReply? replyTo,
   }) async {
     try {
+      // Sanitize participant list to avoid invalid field paths
+      final sanitizedParticipants = <String>{
+        senderId,
+        ...participants.where((p) => p.trim().isNotEmpty),
+      }.toList();
+
       // Add message to subcollection
       final now = Timestamp.fromDate(DateTime.now());
       await _firestore
@@ -81,6 +88,7 @@ class MessagingProvider with ChangeNotifier {
             'timestamp': now,
             'isRead': false,
             'readBy': [senderId], // Sender has "read" their own message
+            if (replyTo != null) 'replyTo': replyTo.toMap(),
           });
 
       // Get current conversation to access unread counts
@@ -100,7 +108,7 @@ class MessagingProvider with ChangeNotifier {
 
       // Update unread counts
       currentUnreadCount[senderId] = 0;
-      for (var participantId in participants) {
+      for (var participantId in sanitizedParticipants) {
         if (participantId != senderId) {
           currentUnreadCount[participantId] =
               (currentUnreadCount[participantId] ?? 0) + 1;
@@ -117,7 +125,7 @@ class MessagingProvider with ChangeNotifier {
       });
 
       // Create notifications for recipients
-      for (var participantId in participants) {
+      for (var participantId in sanitizedParticipants) {
         if (participantId != senderId) {
           await _firestore.collection('notifications').add({
             'userId': participantId,
@@ -277,18 +285,38 @@ class MessagingProvider with ChangeNotifier {
     required String userId,
   }) async {
     try {
-      final now = Timestamp.fromDate(DateTime.now());
-
-      await _firestore
+      final docRef = _firestore
           .collection('conversations')
           .doc(conversationId)
           .collection('messages')
-          .doc(messageId)
-          .update({
-            'reactions': FieldValue.arrayUnion([
-              {'emoji': emoji, 'userId': userId, 'timestamp': now},
-            ]),
+          .doc(messageId);
+
+      await _firestore.runTransaction((txn) async {
+        final snapshot = await txn.get(docRef);
+        final Map<String, dynamic>? data = snapshot.data();
+        final reactions = List<Map<String, dynamic>>.from(
+          (data?['reactions'] as List<dynamic>? ?? []).map(
+            (r) => Map<String, dynamic>.from(r as Map),
+          ),
+        );
+
+        final existingIndex = reactions.indexWhere(
+          (r) => r['emoji'] == emoji && r['userId'] == userId,
+        );
+
+        // Toggle reaction: remove if already present, else add new
+        if (existingIndex >= 0) {
+          reactions.removeAt(existingIndex);
+        } else {
+          reactions.add({
+            'emoji': emoji,
+            'userId': userId,
+            'timestamp': Timestamp.fromDate(DateTime.now()),
           });
+        }
+
+        txn.update(docRef, {'reactions': reactions});
+      });
     } catch (e) {
       throw Exception('Failed to add reaction: $e');
     }
@@ -302,16 +330,27 @@ class MessagingProvider with ChangeNotifier {
     required String userId,
   }) async {
     try {
-      await _firestore
+      final docRef = _firestore
           .collection('conversations')
           .doc(conversationId)
           .collection('messages')
-          .doc(messageId)
-          .update({
-            'reactions': FieldValue.arrayRemove([
-              {'emoji': emoji, 'userId': userId},
-            ]),
-          });
+          .doc(messageId);
+
+      await _firestore.runTransaction((txn) async {
+        final snapshot = await txn.get(docRef);
+        final Map<String, dynamic>? data = snapshot.data();
+        final reactions = List<Map<String, dynamic>>.from(
+          (data?['reactions'] as List<dynamic>? ?? []).map(
+            (r) => Map<String, dynamic>.from(r as Map),
+          ),
+        );
+
+        reactions.removeWhere(
+          (r) => r['emoji'] == emoji && r['userId'] == userId,
+        );
+
+        txn.update(docRef, {'reactions': reactions});
+      });
     } catch (e) {
       throw Exception('Failed to remove reaction: $e');
     }

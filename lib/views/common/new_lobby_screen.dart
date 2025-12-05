@@ -23,6 +23,8 @@ class NewLobbyScreen extends StatefulWidget {
 }
 
 class _NewLobbyScreenState extends State<NewLobbyScreen> {
+  AuthProvider? _authProvider;
+  LobbyProvider? _lobbyProvider;
   String? _currentLobbyId;
   bool _showDiscovery = true;
 
@@ -141,7 +143,6 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
     }
 
     final lobbyProvider = Provider.of<LobbyProvider>(context);
-    final authProvider = Provider.of<AuthProvider>(context);
 
     return FutureBuilder<Lobby?>(
       future: lobbyProvider.getLobby(_currentLobbyId!),
@@ -567,20 +568,23 @@ class _NewLobbyScreenState extends State<NewLobbyScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _authProvider ??= Provider.of<AuthProvider>(context, listen: false);
+    _lobbyProvider ??= Provider.of<LobbyProvider>(context, listen: false);
+  }
+
+  @override
   void dispose() {
     // Leave lobby when screen is disposed
-    if (_currentLobbyId != null) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final lobbyProvider = Provider.of<LobbyProvider>(context, listen: false);
-
-      if (authProvider.appUser != null) {
-        lobbyProvider.leaveLobby(
-          lobbyId: _currentLobbyId!,
-          userId: authProvider.appUser!.uid,
-          displayName:
-              authProvider.appUser!.displayName ?? authProvider.appUser!.email,
-        );
-      }
+    if (_currentLobbyId != null && _authProvider?.appUser != null) {
+      _lobbyProvider?.leaveLobby(
+        lobbyId: _currentLobbyId!,
+        userId: _authProvider!.appUser!.uid,
+        displayName:
+            _authProvider!.appUser!.displayName ??
+            _authProvider!.appUser!.email,
+      );
     }
     super.dispose();
   }

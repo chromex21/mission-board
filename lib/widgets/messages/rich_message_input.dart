@@ -1,12 +1,11 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as p;
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/messaging_provider.dart';
@@ -18,11 +17,15 @@ import 'voice_note_recorder.dart';
 class RichMessageInput extends StatefulWidget {
   final String conversationId;
   final String recipientId;
+  final Message? replyingTo;
+  final VoidCallback? onReplyCleared;
 
   const RichMessageInput({
     super.key,
     required this.conversationId,
     required this.recipientId,
+    this.replyingTo,
+    this.onReplyCleared,
   });
 
   @override
@@ -62,10 +65,12 @@ class _RichMessageInputState extends State<RichMessageInput> {
         content: text,
         participants: [currentUser.uid, widget.recipientId],
         type: MessageType.text,
+        replyTo: _buildReplyPayload(),
       );
 
       _messageController.clear();
       setState(() => _showEmojiPicker = false);
+      widget.onReplyCleared?.call();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,34 +94,22 @@ class _RichMessageInputState extends State<RichMessageInput> {
 
       if (image != null) {
         // Show preview with editor
-        final imageData = kIsWeb ? await image.readAsBytes() : null;
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => MediaPreviewScreen(
-              imageFile: kIsWeb ? imageData : File(image.path),
+              imageFile: File(image.path),
               fileName: image.name,
-              isWeb: kIsWeb,
             ),
           ),
         );
 
         if (result != null && result['confirmed'] == true) {
-          if (kIsWeb) {
-            final bytes = await image.readAsBytes();
-            await _uploadAndSendFileWeb(
-              bytes,
-              image.name,
-              MessageType.image,
-              caption: result['caption'],
-            );
-          } else {
-            await _uploadAndSendFile(
-              image.path,
-              MessageType.image,
-              caption: result['caption'],
-            );
-          }
+          await _uploadAndSendFile(
+            image.path,
+            MessageType.image,
+            caption: result['caption'],
+          );
         }
       }
     } catch (e) {
@@ -165,7 +158,7 @@ class _RichMessageInputState extends State<RichMessageInput> {
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
-        final filePath = kIsWeb ? null : file.path;
+        final filePath = file.path;
 
         if (filePath != null) {
           await _uploadAndSendFile(
@@ -173,9 +166,6 @@ class _RichMessageInputState extends State<RichMessageInput> {
             MessageType.file,
             fileName: file.name,
           );
-        } else if (file.bytes != null) {
-          // Web upload using bytes
-          await _uploadAndSendFileWeb(file.bytes!, file.name, MessageType.file);
         }
       }
     } catch (e) {
@@ -263,7 +253,7 @@ class _RichMessageInputState extends State<RichMessageInput> {
 
     try {
       final file = File(filePath);
-      final name = fileName ?? file.path.split('/').last;
+      final name = fileName ?? p.basename(file.path);
       final storageRef = FirebaseStorage.instance.ref().child(
         'messages/${widget.conversationId}/${DateTime.now().millisecondsSinceEpoch}_$name',
       );
@@ -271,7 +261,19 @@ class _RichMessageInputState extends State<RichMessageInput> {
       setState(() => _uploadStatus = 'Uploading...');
 
       // Upload with progress tracking
-      final uploadTask = storageRef.putFile(file);
+      String? contentType;
+      if (type == MessageType.image) {
+        contentType = 'image/jpeg';
+      } else if (type == MessageType.gif) {
+        contentType = 'image/gif';
+      } else if (type == MessageType.file) {
+        contentType = 'application/octet-stream';
+      }
+
+      final uploadTask = storageRef.putFile(
+        file,
+        SettableMetadata(contentType: contentType),
+      );
 
       uploadTask.snapshotEvents.listen((taskSnapshot) {
         if (mounted) {
@@ -285,14 +287,17 @@ class _RichMessageInputState extends State<RichMessageInput> {
       await uploadTask;
       setState(() => _uploadStatus = 'Getting URL...');
 
-      final downloadUrl = await storageRef.getDownloadURL();
+      // Get the actual storage path from the reference
+      final storagePath = storageRef.fullPath;
 
       setState(() => _uploadStatus = 'Sending message...');
 
       // Send message with caption if provided
       final messageContent = caption != null && caption.isNotEmpty
-          ? '$downloadUrl|caption:$caption'
-          : downloadUrl;
+          ? '$storagePath|caption:$caption'
+          : storagePath;
+
+      debugPrint('[_uploadAndSendFile] Storing storage path: $storagePath');
 
       await messagingProvider.sendMessage(
         conversationId: widget.conversationId,
@@ -301,8 +306,8 @@ class _RichMessageInputState extends State<RichMessageInput> {
         content: messageContent,
         participants: [authProvider.appUser!.uid, widget.recipientId],
         type: type,
+        replyTo: _buildReplyPayload(),
       );
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -328,95 +333,22 @@ class _RichMessageInputState extends State<RichMessageInput> {
           _uploadProgress = 0.0;
           _uploadStatus = '';
         });
+        widget.onReplyCleared?.call();
       }
     }
   }
 
-  Future<void> _uploadAndSendFileWeb(
-    List<int> bytes,
-    String fileName,
-    MessageType type, {
-    String? caption,
-  }) async {
-    setState(() {
-      _isUploading = true;
-      _uploadProgress = 0.0;
-      _uploadStatus = 'Preparing...';
-    });
+  MessageReply? _buildReplyPayload() {
+    final source = widget.replyingTo;
+    if (source == null) return null;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final messagingProvider = Provider.of<MessagingProvider>(
-      context,
-      listen: false,
+    return MessageReply(
+      messageId: source.id,
+      senderId: source.senderId,
+      senderName: source.senderName,
+      content: source.content,
+      type: source.type,
     );
-
-    try {
-      final storageRef = FirebaseStorage.instance.ref().child(
-        'messages/${widget.conversationId}/${DateTime.now().millisecondsSinceEpoch}_$fileName',
-      );
-
-      setState(() => _uploadStatus = 'Uploading...');
-
-      // Upload with progress tracking
-      final uploadTask = storageRef.putData(Uint8List.fromList(bytes));
-
-      uploadTask.snapshotEvents.listen((taskSnapshot) {
-        if (mounted) {
-          setState(() {
-            _uploadProgress =
-                taskSnapshot.bytesTransferred / taskSnapshot.totalBytes;
-          });
-        }
-      });
-
-      await uploadTask;
-      setState(() => _uploadStatus = 'Getting URL...');
-
-      final downloadUrl = await storageRef.getDownloadURL();
-
-      setState(() => _uploadStatus = 'Sending message...');
-
-      // Send message with caption if provided
-      final messageContent = caption != null && caption.isNotEmpty
-          ? '$downloadUrl|caption:$caption'
-          : downloadUrl;
-
-      await messagingProvider.sendMessage(
-        conversationId: widget.conversationId,
-        senderId: authProvider.appUser!.uid,
-        senderName: authProvider.appUser!.displayName ?? 'Unknown',
-        content: messageContent,
-        participants: [authProvider.appUser!.uid, widget.recipientId],
-        type: type,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${type.name.toUpperCase()} sent successfully'),
-            backgroundColor: AppTheme.successGreen,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload ${type.name}: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-          _uploadProgress = 0.0;
-          _uploadStatus = '';
-        });
-      }
-    }
   }
 
   void _onEmojiSelected(Emoji emoji) {
